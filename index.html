@@ -3,299 +3,735 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rsfoto Jobtracker</title>
+  <title>RSADM – Job & Faktura Overblik</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; max-width: 980px; }
-    h1 { margin-bottom: 6px; }
-    .muted { color: #555; margin-top: 0; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    label { display: block; font-size: 13px; color: #333; margin-bottom: 6px; }
-    input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 10px; font-size: 14px; }
-    button { cursor: pointer; border: none; background: #111; color: #fff; }
-    button.secondary { background: #eee; color: #111; border: 1px solid #ccc; }
-    button.danger { background: #b00020; }
-    .row { display: flex; gap: 10px; }
-    .row > * { flex: 1; }
-    .card { border: 1px solid #e5e5e5; border-radius: 16px; padding: 16px; margin-top: 16px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { text-align: left; border-bottom: 1px solid #eee; padding: 10px 6px; font-size: 13px; }
-    th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #555; }
-    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #f2f2f2; font-size: 12px; }
-    .totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
-    .stat { border: 1px solid #eee; border-radius: 14px; padding: 12px; }
-    .stat .k { font-size: 12px; color: #666; }
-    .stat .v { font-size: 20px; font-weight: 700; }
-    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .totals { grid-template-columns: 1fr; } }
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin: 24px; max-width: 1200px; }
+    h1 { margin: 0 0 6px; }
+    .muted { color:#555; margin: 6px 0 0; }
+    .card { border:1px solid #e8e8e8; border-radius:16px; padding:16px; margin-top:16px; }
+    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
+    label { display:block; font-size:12px; color:#333; margin: 0 0 6px; }
+    input, select, button, textarea { width:100%; padding:10px; border:1px solid #ccc; border-radius:12px; font-size:14px; box-sizing:border-box; }
+    textarea { min-height: 38px; resize: vertical; }
+    button { border:none; background:#111; color:#fff; cursor:pointer; }
+    button.secondary { background:#eee; color:#111; border:1px solid #ccc; }
+    button.danger { background:#b00020; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .row { display:flex; gap:10px; align-items:stretch; }
+    .row > * { flex:1; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
+    th, td { border-bottom:1px solid #eee; padding:10px 6px; font-size:13px; text-align:left; vertical-align: top; }
+    th { font-size:12px; color:#555; text-transform: uppercase; letter-spacing: .04em; }
+    .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#f2f2f2; font-size:12px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .totals { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:12px; }
+    .stat { border:1px solid #eee; border-radius:14px; padding:12px; }
+    .stat .k { font-size:12px; color:#666; }
+    .stat .v { font-size:20px; font-weight:700; }
+    .hidden { display:none !important; }
+    .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+    .topbar .right { display:flex; gap:10px; align-items:center; }
+    .small { font-size:12px; color:#666; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .totals { grid-template-columns: 1fr; } .topbar { flex-direction: column; } }
   </style>
 </head>
 <body>
-  <h1>Rsfoto Jobtracker</h1>
-  <p class="muted">Opret et job, track tid/transport, og eksporter til Excel.</p>
+  <div class="topbar">
+    <div>
+      <h1>RSADM – Job & Faktura Overblik</h1>
+      <p class="muted">Login → opret jobs → ret jobs → statistik pr. kategori og måned.</p>
+    </div>
+    <div class="right">
+      <div id="whoami" class="small"></div>
+      <button id="logoutBtn" class="secondary hidden">Log ud</button>
+    </div>
+  </div>
 
-  <div class="card">
-    <h2 style="margin-top:0;">Nyt job</h2>
-
+  <!-- LOGIN -->
+  <div id="loginCard" class="card">
+    <h2 style="margin-top:0;">Login</h2>
     <div class="grid">
       <div>
-        <label>Dato</label>
-        <input id="date" type="date" />
+        <label>Email</label>
+        <input id="email" type="email" placeholder="din@email.dk" />
       </div>
       <div>
-        <label>Kategori</label>
-        <select id="category">
-          <option>Motorsport</option>
-          <option>Fodbold</option>
-          <option>Bryllup</option>
-          <option>Event</option>
-          <option>Studio</option>
-          <option>Nightclub</option>
-          <option>Andet</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Kunde</label>
-        <input id="client" placeholder="fx Seven Racing / AC Horsens" />
-      </div>
-      <div>
-        <label>Lokation</label>
-        <input id="location" placeholder="fx Jyllandsringen / Horsens" />
-      </div>
-
-      <div>
-        <label>Transport til (min)</label>
-        <input id="travelTo" type="number" min="0" step="1" placeholder="fx 45" />
-      </div>
-      <div>
-        <label>Transport fra (min)</label>
-        <input id="travelFrom" type="number" min="0" step="1" placeholder="fx 45" />
+        <label>Password</label>
+        <input id="password" type="password" placeholder="••••••••" />
       </div>
     </div>
-
     <div class="row" style="margin-top:12px;">
-      <button id="startBtn">Start tid</button>
-      <button id="stopBtn" class="secondary" disabled>Stop tid</button>
-      <button id="saveBtn" class="secondary" disabled>Gem job</button>
+      <button id="loginBtn">Log ind</button>
+      <button id="signupBtn" class="secondary">Opret bruger</button>
     </div>
-
-    <p id="timerStatus" class="muted" style="margin-bottom:0;"></p>
+    <p id="loginMsg" class="muted"></p>
   </div>
 
-  <div class="card">
-    <div class="row">
-      <button id="exportBtn">Eksporter CSV (Excel)</button>
-      <button id="clearBtn" class="danger">Slet alle jobs</button>
+  <!-- APP -->
+  <div id="app" class="hidden">
+    <!-- Categories -->
+    <div class="card">
+      <h2 style="margin-top:0;">Kategorier</h2>
+      <div class="row">
+        <div>
+          <label>Ny kategori</label>
+          <input id="newCategory" placeholder="fx Fodbold / Håndbold / Klub / Motorsport" />
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button id="addCategoryBtn">Tilføj kategori</button>
+        </div>
+      </div>
+      <p class="muted" id="catMsg"></p>
     </div>
 
-    <div class="totals" id="totals"></div>
+    <!-- New job -->
+    <div class="card">
+      <h2 style="margin-top:0;">Nyt job</h2>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Dato</th>
-          <th>Kunde</th>
-          <th>Kategori</th>
-          <th>Arbejdstid</th>
-          <th>Transport</th>
-          <th>Lokation</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+      <div class="grid">
+        <div>
+          <label>Faktura nummer (dit eget)</label>
+          <input id="invoiceNo" placeholder="fx 2025-001 / e-conomic nr." />
+        </div>
+        <div>
+          <label>Dato</label>
+          <input id="jobDate" type="date" />
+        </div>
+
+        <div>
+          <label>Kategori</label>
+          <select id="categorySelect"></select>
+        </div>
+        <div>
+          <label>Kunde</label>
+          <input id="client" placeholder="fx Seven Racing / AC Horsens" />
+        </div>
+
+        <div>
+          <label>Tid brugt (skriv som du vil: 1:30 / 2t 15m / 90)</label>
+          <input id="workText" placeholder="fx 2:15" />
+        </div>
+        <div>
+          <label>Transport total (minutter)</label>
+          <input id="travelMinutes" type="number" min="0" step="1" placeholder="fx 90" />
+        </div>
+
+        <div>
+          <label>Fakturér (beløb efter moms / inkl. moms)</label>
+          <input id="invoiceInclVat" type="number" min="0" step="0.01" placeholder="fx 2500.00" />
+        </div>
+        <div>
+          <label>Noter</label>
+          <input id="notes" placeholder="fx levering / særlige aftaler" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="createJobBtn">Gem job</button>
+        <button id="resetJobBtn" class="secondary">Nulstil felter</button>
+      </div>
+
+      <p id="jobMsg" class="muted"></p>
+    </div>
+
+    <!-- Stats -->
+    <div class="card">
+      <h2 style="margin-top:0;">Overblik</h2>
+      <div class="totals" id="totals"></div>
+
+      <div class="grid" style="margin-top:12px;">
+        <div>
+          <h3 style="margin:0 0 8px;">Jobs pr. kategori</h3>
+          <table>
+            <thead><tr><th>Kategori</th><th>Antal</th><th>Timer</th></tr></thead>
+            <tbody id="byCategory"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3 style="margin:0 0 8px;">Timer pr. måned</h3>
+          <table>
+            <thead><tr><th>Måned</th><th>Timer</th></tr></thead>
+            <tbody id="byMonth"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jobs table -->
+    <div class="card">
+      <div class="row" style="align-items:flex-end;">
+        <div>
+          <label>Søg (kunde, kategori, id, faktura nr.)</label>
+          <input id="search" placeholder="fx seven / 2500 / klub" />
+        </div>
+        <div>
+          <label>År (filter)</label>
+          <select id="yearFilter">
+            <option value="">Alle</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button id="refreshBtn" class="secondary">Opdater</button>
+          <button id="exportBtn">Eksport CSV</button>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Dato</th>
+            <th>Kunde</th>
+            <th>Kategori</th>
+            <th>Faktura nr</th>
+            <th>Tid</th>
+            <th>Transport</th>
+            <th>Beløb (inkl moms)</th>
+            <th>Handling</th>
+          </tr>
+        </thead>
+        <tbody id="jobsTbody"></tbody>
+      </table>
+
+      <p class="muted" id="tableMsg"></p>
+    </div>
+
+    <!-- Edit modal-ish -->
+    <div id="editCard" class="card hidden">
+      <h2 style="margin-top:0;">Ret job <span id="editId" class="mono"></span></h2>
+
+      <div class="grid">
+        <div>
+          <label>Faktura nummer</label>
+          <input id="editInvoiceNo" />
+        </div>
+        <div>
+          <label>Dato</label>
+          <input id="editJobDate" type="date" />
+        </div>
+
+        <div>
+          <label>Kategori</label>
+          <select id="editCategorySelect"></select>
+        </div>
+        <div>
+          <label>Kunde</label>
+          <input id="editClient" />
+        </div>
+
+        <div>
+          <label>Tid brugt (tekst)</label>
+          <input id="editWorkText" />
+        </div>
+        <div>
+          <label>Transport total (min)</label>
+          <input id="editTravelMinutes" type="number" min="0" step="1" />
+        </div>
+
+        <div>
+          <label>Beløb inkl moms</label>
+          <input id="editInvoiceInclVat" type="number" min="0" step="0.01" />
+        </div>
+        <div>
+          <label>Noter</label>
+          <input id="editNotes" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="saveEditBtn">Gem rettelse</button>
+        <button id="cancelEditBtn" class="secondary">Annuller</button>
+        <button id="deleteJobBtn" class="danger">Slet job</button>
+      </div>
+
+      <p id="editMsg" class="muted"></p>
+    </div>
   </div>
 
-<script>
-  const $ = (id) => document.getElementById(id);
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  const storageKey = "rsfoto_jobtracker_v1";
-  let jobs = loadJobs();
+    // 🔧 UDFYLD DISSE:
+    const SUPABASE_URL = "PASTE_SUPABASE_URL_HERE";
+    const SUPABASE_ANON_KEY = "PASTE_SUPABASE_ANON_KEY_HERE";
 
-  let activeTimer = null; // { startMs }
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  function loadJobs() {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
-  }
+    const $ = (id) => document.getElementById(id);
+    const fmtH = (mins) => {
+      const m = Math.max(0, Math.round(Number(mins)||0));
+      const h = Math.floor(m/60);
+      const r = m%60;
+      return `${h}:${String(r).padStart(2,'0')}`;
+    };
 
-  function saveJobs() {
-    localStorage.setItem(storageKey, JSON.stringify(jobs));
-  }
-
-  function pad2(n){ return String(n).padStart(2,'0'); }
-
-  function minutesToHhMm(mins){
-    const m = Math.max(0, Math.round(mins));
-    const h = Math.floor(m/60);
-    const r = m%60;
-    return `${h}:${pad2(r)}`;
-  }
-
-  function nowISODate(){
-    const d = new Date();
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-  }
-
-  function computeTotals(){
-    const totalJobs = jobs.length;
-    const workMins = jobs.reduce((a,j)=>a+(j.workMinutes||0),0);
-    const travelMins = jobs.reduce((a,j)=>a+(j.travelMinutes||0),0);
-
-    // kategori-tælling
-    const catCount = {};
-    for (const j of jobs) catCount[j.category] = (catCount[j.category]||0)+1;
-
-    return { totalJobs, workMins, travelMins, catCount };
-  }
-
-  function render(){
-    // totals
-    const t = computeTotals();
-    $("totals").innerHTML = `
-      <div class="stat"><div class="k">Jobs i alt</div><div class="v">${t.totalJobs}</div></div>
-      <div class="stat"><div class="k">Arbejdstid i alt</div><div class="v">${minutesToHhMm(t.workMins)}</div></div>
-      <div class="stat"><div class="k">Transport i alt</div><div class="v">${minutesToHhMm(t.travelMins)}</div></div>
-    `;
-
-    // table
-    const rows = jobs.slice().sort((a,b)=> (b.date||"").localeCompare(a.date||""));
-    $("tbody").innerHTML = rows.map(j => `
-      <tr>
-        <td>${j.date || ""}</td>
-        <td>${escapeHtml(j.client || "")}</td>
-        <td><span class="pill">${escapeHtml(j.category||"")}</span></td>
-        <td>${minutesToHhMm(j.workMinutes||0)}</td>
-        <td>${minutesToHhMm(j.travelMinutes||0)}</td>
-        <td>${escapeHtml(j.location||"")}</td>
-      </tr>
-    `).join("");
-
-    // default date
-    if (!$("date").value) $("date").value = nowISODate();
-  }
-
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, (c)=>({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[c]));
-  }
-
-  function csvEscape(s){
-    const str = String(s ?? "");
-    if (/[,"\n]/.test(str)) return `"${str.replace(/"/g,'""')}"`;
-    return str;
-  }
-
-  function exportCSV(){
-    const header = ["JobID","Dato","Kunde","Kategori","Lokation","StartISO","SlutISO","ArbejdstidMin","TransportTilMin","TransportFraMin","TransportTotalMin"];
-    const lines = [header.join(",")];
-
-    for (const j of jobs) {
-      lines.push([
-        csvEscape(j.id),
-        csvEscape(j.date),
-        csvEscape(j.client),
-        csvEscape(j.category),
-        csvEscape(j.location),
-        csvEscape(j.startISO),
-        csvEscape(j.stopISO),
-        csvEscape(j.workMinutes),
-        csvEscape(j.travelTo),
-        csvEscape(j.travelFrom),
-        csvEscape(j.travelMinutes),
-      ].join(","));
+    function todayISO(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const da = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${da}`;
     }
 
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `rsfoto_jobtracker_${nowISODate()}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c)=>({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
 
-  function resetForm(){
-    $("client").value = "";
-    $("location").value = "";
-    $("travelTo").value = "";
-    $("travelFrom").value = "";
-    $("category").value = "Motorsport";
-    $("saveBtn").disabled = true;
-  }
+    // Parse work text → minutes (for stats)
+    // Accepts:
+    // - "1:30" => 90
+    // - "90" => 90
+    // - "2t 15m" / "2h 15m" => 135
+    function parseWorkMinutes(input){
+      const s = String(input ?? "").trim().toLowerCase();
+      if (!s) return 0;
 
-  // buttons
-  $("startBtn").addEventListener("click", () => {
-    if (activeTimer) return;
-    activeTimer = { startMs: Date.now(), startISO: new Date().toISOString() };
-    $("timerStatus").textContent = `Timer kører… start: ${new Date().toLocaleTimeString()}`;
-    $("startBtn").disabled = true;
-    $("stopBtn").disabled = false;
-    $("saveBtn").disabled = true;
-  });
+      const colon = s.match(/^(\d+)\s*:\s*(\d{1,2})$/);
+      if (colon) return Number(colon[1])*60 + Number(colon[2]);
 
-  $("stopBtn").addEventListener("click", () => {
-    if (!activeTimer) return;
-    const stopMs = Date.now();
-    const stopISO = new Date().toISOString();
-    const workMinutes = Math.round((stopMs - activeTimer.startMs) / 60000);
+      const onlyNum = s.match(/^\d+$/);
+      if (onlyNum) return Number(s);
 
-    // gem “kladde” i memory på knappen
-    $("saveBtn").dataset.startISO = activeTimer.startISO;
-    $("saveBtn").dataset.stopISO = stopISO;
-    $("saveBtn").dataset.workMinutes = String(workMinutes);
+      let total = 0;
+      const h = s.match(/(\d+)\s*(t|h|timer|time)/);
+      const m = s.match(/(\d+)\s*(m|min|minutter|minute)/);
+      if (h) total += Number(h[1]) * 60;
+      if (m) total += Number(m[1]);
+      return total;
+    }
 
-    $("timerStatus").textContent = `Stoppet. Arbejdstid: ${minutesToHhMm(workMinutes)} (klar til at gemme)`;
-    $("startBtn").disabled = false;
-    $("stopBtn").disabled = true;
-    $("saveBtn").disabled = false;
+    // State
+    let user = null;
+    let categories = [];
+    let jobs = [];
+    let editingId = null;
 
-    activeTimer = null;
-  });
+    function setLoggedInUI(isIn){
+      $("loginCard").classList.toggle("hidden", isIn);
+      $("app").classList.toggle("hidden", !isIn);
+      $("logoutBtn").classList.toggle("hidden", !isIn);
+      $("whoami").textContent = isIn ? `Logget ind: ${user?.email ?? ""}` : "";
+    }
 
-  $("saveBtn").addEventListener("click", () => {
-    const date = $("date").value || nowISODate();
-    const category = $("category").value;
-    const client = $("client").value.trim();
-    const location = $("location").value.trim();
+    async function ensureDefaultCategories(){
+      // If none exist, seed a starter pack
+      if (categories.length) return;
+      const starter = ["Fodbold","Håndbold","Klub","Motorsport","Event","Bryllup","Studio"];
+      const inserts = starter.map(name => ({ user_id: user.id, name }));
+      const { error } = await supabase.from("categories").insert(inserts);
+      // ignore unique errors
+      if (error) console.warn(error);
+      await loadCategories();
+    }
 
-    const travelTo = Number($("travelTo").value || 0);
-    const travelFrom = Number($("travelFrom").value || 0);
-    const travelMinutes = Math.max(0, travelTo + travelFrom);
+    async function loadCategories(){
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id,name")
+        .order("name", { ascending: true });
 
-    const startISO = $("saveBtn").dataset.startISO || "";
-    const stopISO = $("saveBtn").dataset.stopISO || "";
-    const workMinutes = Number($("saveBtn").dataset.workMinutes || 0);
+      if (error) {
+        $("catMsg").textContent = `Fejl ved hentning af kategorier: ${error.message}`;
+        categories = [];
+        renderCategorySelects();
+        return;
+      }
 
-    const id = `J${Date.now()}`;
+      categories = data ?? [];
+      renderCategorySelects();
+    }
 
-    jobs.push({
-      id, date, category, client, location,
-      startISO, stopISO,
-      workMinutes,
-      travelTo, travelFrom,
-      travelMinutes
+    function renderCategorySelects(){
+      const opts = categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+      $("categorySelect").innerHTML = `<option value="">(Vælg)</option>` + opts;
+      $("editCategorySelect").innerHTML = `<option value="">(Vælg)</option>` + opts;
+    }
+
+    async function loadJobs(){
+      const { data, error } = await supabase
+        .from("jobs")
+        .select(`
+          id, job_date, client, invoice_no, work_minutes, work_text, travel_minutes, invoice_amount_incl_vat, notes,
+          category_id,
+          categories(name)
+        `)
+        .order("job_date", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        $("tableMsg").textContent = `Fejl ved hentning af jobs: ${error.message}`;
+        jobs = [];
+        renderAll();
+        return;
+      }
+
+      jobs = (data ?? []).map(r => ({
+        ...r,
+        category_name: r.categories?.name ?? ""
+      }));
+
+      $("tableMsg").textContent = "";
+      renderAll();
+    }
+
+    function renderYearFilter(){
+      const years = Array.from(new Set(jobs.map(j => String(j.job_date || "").slice(0,4)).filter(Boolean))).sort((a,b)=>b.localeCompare(a));
+      const cur = $("yearFilter").value;
+      $("yearFilter").innerHTML = `<option value="">Alle</option>` + years.map(y=>`<option value="${y}">${y}</option>`).join("");
+      if (years.includes(cur)) $("yearFilter").value = cur;
+    }
+
+    function computeStats(filtered){
+      const totalJobs = filtered.length;
+      const totalWorkMin = filtered.reduce((a,j)=>a+(Number(j.work_minutes)||0),0);
+      const totalTravelMin = filtered.reduce((a,j)=>a+(Number(j.travel_minutes)||0),0);
+      const totalInvoice = filtered.reduce((a,j)=>a+(Number(j.invoice_amount_incl_vat)||0),0);
+
+      // by category
+      const catMap = new Map();
+      for (const j of filtered) {
+        const key = j.category_name || "(Ingen)";
+        const cur = catMap.get(key) || { count:0, minutes:0 };
+        cur.count += 1;
+        cur.minutes += Number(j.work_minutes)||0;
+        catMap.set(key, cur);
+      }
+
+      // by month
+      const monthMap = new Map();
+      for (const j of filtered) {
+        const y = String(j.job_date||"").slice(0,4);
+        const m = String(j.job_date||"").slice(5,7);
+        if (!y || !m) continue;
+        const key = `${y}-${m}`;
+        monthMap.set(key, (monthMap.get(key)||0) + (Number(j.work_minutes)||0));
+      }
+
+      return { totalJobs, totalWorkMin, totalTravelMin, totalInvoice, catMap, monthMap };
+    }
+
+    function renderStats(filtered){
+      const s = computeStats(filtered);
+      $("totals").innerHTML = `
+        <div class="stat"><div class="k">Jobs i alt</div><div class="v">${s.totalJobs}</div></div>
+        <div class="stat"><div class="k">Arbejdstid i alt</div><div class="v">${fmtH(s.totalWorkMin)}</div></div>
+        <div class="stat"><div class="k">Transport i alt</div><div class="v">${fmtH(s.totalTravelMin)}</div></div>
+        <div class="stat"><div class="k">Fakturering (inkl moms)</div><div class="v">${s.totalInvoice.toFixed(2)}</div></div>
+      `;
+
+      const catRows = Array.from(s.catMap.entries())
+        .sort((a,b)=> (b[1].count - a[1].count) || a[0].localeCompare(b[0]))
+        .map(([name, v]) => `
+          <tr>
+            <td>${escapeHtml(name)}</td>
+            <td>${v.count}</td>
+            <td>${fmtH(v.minutes)}</td>
+          </tr>
+        `).join("");
+      $("byCategory").innerHTML = catRows || `<tr><td colspan="3" class="muted">Ingen data endnu</td></tr>`;
+
+      const monthRows = Array.from(s.monthMap.entries())
+        .sort((a,b)=> b[0].localeCompare(a[0]))
+        .map(([ym, minutes]) => `
+          <tr>
+            <td>${ym}</td>
+            <td>${fmtH(minutes)}</td>
+          </tr>
+        `).join("");
+      $("byMonth").innerHTML = monthRows || `<tr><td colspan="2" class="muted">Ingen data endnu</td></tr>`;
+    }
+
+    function filterJobs(){
+      const q = $("search").value.trim().toLowerCase();
+      const y = $("yearFilter").value;
+
+      return jobs.filter(j => {
+        if (y && String(j.job_date||"").slice(0,4) !== y) return false;
+        if (!q) return true;
+
+        const hay = [
+          j.id, j.client, j.invoice_no, j.category_name,
+          String(j.invoice_amount_incl_vat ?? "")
+        ].join(" ").toLowerCase();
+
+        return hay.includes(q);
+      });
+    }
+
+    function renderJobsTable(filtered){
+      $("jobsTbody").innerHTML = filtered.map(j => `
+        <tr>
+          <td class="mono">${escapeHtml(j.id)}</td>
+          <td>${escapeHtml(j.job_date)}</td>
+          <td>${escapeHtml(j.client || "")}</td>
+          <td><span class="pill">${escapeHtml(j.category_name || "(Ingen)")}</span></td>
+          <td>${escapeHtml(j.invoice_no || "")}</td>
+          <td>${fmtH(j.work_minutes || 0)}</td>
+          <td>${fmtH(j.travel_minutes || 0)}</td>
+          <td>${Number(j.invoice_amount_incl_vat||0).toFixed(2)}</td>
+          <td>
+            <button class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button>
+          </td>
+        </tr>
+      `).join("");
+
+      // bind edit buttons
+      document.querySelectorAll("button[data-edit]").forEach(btn => {
+        btn.addEventListener("click", () => openEdit(btn.getAttribute("data-edit")));
+      });
+    }
+
+    function renderAll(){
+      const filtered = filterJobs();
+      renderYearFilter();
+      renderStats(filtered);
+      renderJobsTable(filtered);
+    }
+
+    // CSV export
+    function exportCSV(filtered){
+      const header = ["JobID","Dato","Kunde","Kategori","FakturaNr","WorkMin","WorkText","TransportMin","BeløbInclMoms","Noter"];
+      const lines = [header.join(",")];
+
+      const esc = (s) => {
+        const str = String(s ?? "");
+        return /[,"\n]/.test(str) ? `"${str.replace(/"/g,'""')}"` : str;
+      };
+
+      for (const j of filtered) {
+        lines.push([
+          esc(j.id),
+          esc(j.job_date),
+          esc(j.client),
+          esc(j.category_name),
+          esc(j.invoice_no),
+          esc(j.work_minutes),
+          esc(j.work_text),
+          esc(j.travel_minutes),
+          esc(j.invoice_amount_incl_vat),
+          esc(j.notes),
+        ].join(","));
+      }
+
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rsadm_jobs_${todayISO()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // AUTH
+    async function checkSession(){
+      const { data } = await supabase.auth.getSession();
+      user = data?.session?.user ?? null;
+      setLoggedInUI(!!user);
+
+      if (user) {
+        $("jobDate").value = todayISO();
+        await loadCategories();
+        await ensureDefaultCategories();
+        await loadJobs();
+      }
+    }
+
+    $("loginBtn").addEventListener("click", async () => {
+      $("loginMsg").textContent = "";
+      const email = $("email").value.trim();
+      const password = $("password").value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { $("loginMsg").textContent = error.message; return; }
+
+      user = data.user;
+      setLoggedInUI(true);
+      $("jobDate").value = todayISO();
+      await loadCategories();
+      await ensureDefaultCategories();
+      await loadJobs();
     });
 
-    saveJobs();
-    render();
-    resetForm();
-    $("timerStatus").textContent = "Job gemt ✅";
-  });
+    $("signupBtn").addEventListener("click", async () => {
+      $("loginMsg").textContent = "";
+      const email = $("email").value.trim();
+      const password = $("password").value;
 
-  $("exportBtn").addEventListener("click", exportCSV);
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) { $("loginMsg").textContent = error.message; return; }
 
-  $("clearBtn").addEventListener("click", () => {
-    if (!confirm("Er du sikker på at du vil slette alle jobs?")) return;
-    jobs = [];
-    saveJobs();
-    render();
-  });
+      $("loginMsg").textContent = "Bruger oprettet. Log ind med samme email/password.";
+      // Nogle projekter kræver email-confirmation afhængig af Supabase settings.
+    });
 
-  render();
-</script>
+    $("logoutBtn").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      user = null;
+      categories = [];
+      jobs = [];
+      setLoggedInUI(false);
+    });
+
+    // Categories
+    $("addCategoryBtn").addEventListener("click", async () => {
+      $("catMsg").textContent = "";
+      const name = $("newCategory").value.trim();
+      if (!name) { $("catMsg").textContent = "Skriv et navn på kategorien."; return; }
+
+      const { error } = await supabase.from("categories").insert({ user_id: user.id, name });
+      if (error) { $("catMsg").textContent = error.message; return; }
+
+      $("newCategory").value = "";
+      $("catMsg").textContent = "Kategori tilføjet ✅";
+      await loadCategories();
+      renderAll();
+    });
+
+    // Create job
+    $("createJobBtn").addEventListener("click", async () => {
+      $("jobMsg").textContent = "";
+
+      const invoice_no = $("invoiceNo").value.trim();
+      const job_date = $("jobDate").value || todayISO();
+      const category_id = $("categorySelect").value || null;
+      const client = $("client").value.trim();
+
+      const work_text = $("workText").value.trim();
+      const work_minutes = parseWorkMinutes(work_text);
+
+      const travel_minutes = Math.max(0, Number($("travelMinutes").value || 0));
+      const invoice_amount_incl_vat = $("invoiceInclVat").value === "" ? null : Number($("invoiceInclVat").value);
+      const notes = $("notes").value.trim() || null;
+
+      // Insert without id — DB assigns YYxxxx automatically
+      const { error } = await supabase.from("jobs").insert({
+        user_id: user.id,
+        invoice_no,
+        job_date,
+        category_id,
+        client,
+        work_minutes,
+        work_text,
+        travel_minutes,
+        invoice_amount_incl_vat,
+        notes
+      });
+
+      if (error) { $("jobMsg").textContent = error.message; return; }
+
+      $("jobMsg").textContent = "Job gemt ✅ (ID er genereret automatisk)";
+      resetJobForm();
+      await loadJobs();
+    });
+
+    function resetJobForm(){
+      $("invoiceNo").value = "";
+      $("jobDate").value = todayISO();
+      $("categorySelect").value = "";
+      $("client").value = "";
+      $("workText").value = "";
+      $("travelMinutes").value = "";
+      $("invoiceInclVat").value = "";
+      $("notes").value = "";
+    }
+
+    $("resetJobBtn").addEventListener("click", resetJobForm);
+
+    // Edit job
+    function openEdit(id){
+      const j = jobs.find(x => x.id === id);
+      if (!j) return;
+
+      editingId = id;
+      $("editCard").classList.remove("hidden");
+      $("editId").textContent = id;
+
+      $("editInvoiceNo").value = j.invoice_no ?? "";
+      $("editJobDate").value = j.job_date ?? todayISO();
+      $("editCategorySelect").value = j.category_id ?? "";
+      $("editClient").value = j.client ?? "";
+      $("editWorkText").value = j.work_text ?? "";
+      $("editTravelMinutes").value = j.travel_minutes ?? 0;
+      $("editInvoiceInclVat").value = j.invoice_amount_incl_vat ?? "";
+      $("editNotes").value = j.notes ?? "";
+
+      $("editMsg").textContent = "";
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }
+
+    $("cancelEditBtn").addEventListener("click", () => {
+      editingId = null;
+      $("editCard").classList.add("hidden");
+    });
+
+    $("saveEditBtn").addEventListener("click", async () => {
+      if (!editingId) return;
+      $("editMsg").textContent = "";
+
+      const work_text = $("editWorkText").value.trim();
+      const work_minutes = parseWorkMinutes(work_text);
+
+      const patch = {
+        invoice_no: $("editInvoiceNo").value.trim(),
+        job_date: $("editJobDate").value || todayISO(),
+        category_id: $("editCategorySelect").value || null,
+        client: $("editClient").value.trim(),
+        work_text,
+        work_minutes,
+        travel_minutes: Math.max(0, Number($("editTravelMinutes").value || 0)),
+        invoice_amount_incl_vat: $("editInvoiceInclVat").value === "" ? null : Number($("editInvoiceInclVat").value),
+        notes: $("editNotes").value.trim() || null
+      };
+
+      const { error } = await supabase.from("jobs").update(patch).eq("id", editingId);
+      if (error) { $("editMsg").textContent = error.message; return; }
+
+      $("editMsg").textContent = "Rettet ✅";
+      await loadJobs();
+      $("editCard").classList.add("hidden");
+      editingId = null;
+    });
+
+    $("deleteJobBtn").addEventListener("click", async () => {
+      if (!editingId) return;
+      if (!confirm(`Slet job ${editingId}?`)) return;
+
+      const { error } = await supabase.from("jobs").delete().eq("id", editingId);
+      if (error) { $("editMsg").textContent = error.message; return; }
+
+      await loadJobs();
+      $("editCard").classList.add("hidden");
+      editingId = null;
+    });
+
+    // Filters & actions
+    $("refreshBtn").addEventListener("click", loadJobs);
+    $("search").addEventListener("input", renderAll);
+    $("yearFilter").addEventListener("change", renderAll);
+
+    $("exportBtn").addEventListener("click", () => {
+      const filtered = filterJobs();
+      exportCSV(filtered);
+    });
+
+    // Initial
+    await checkSession();
+
+    // keep UI in sync on auth changes
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      user = session?.user ?? null;
+      setLoggedInUI(!!user);
+      if (user) {
+        $("jobDate").value = todayISO();
+        await loadCategories();
+        await ensureDefaultCategories();
+        await loadJobs();
+      }
+    });
+  </script>
 </body>
 </html>
