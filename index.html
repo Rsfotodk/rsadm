@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rsfoto Jobtracker</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; max-width: 980px; }
+    h1 { margin-bottom: 6px; }
+    .muted { color: #555; margin-top: 0; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    label { display: block; font-size: 13px; color: #333; margin-bottom: 6px; }
+    input, select, button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 10px; font-size: 14px; }
+    button { cursor: pointer; border: none; background: #111; color: #fff; }
+    button.secondary { background: #eee; color: #111; border: 1px solid #ccc; }
+    button.danger { background: #b00020; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+    .card { border: 1px solid #e5e5e5; border-radius: 16px; padding: 16px; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { text-align: left; border-bottom: 1px solid #eee; padding: 10px 6px; font-size: 13px; }
+    th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #555; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #f2f2f2; font-size: 12px; }
+    .totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .stat { border: 1px solid #eee; border-radius: 14px; padding: 12px; }
+    .stat .k { font-size: 12px; color: #666; }
+    .stat .v { font-size: 20px; font-weight: 700; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .totals { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>Rsfoto Jobtracker</h1>
+  <p class="muted">Opret et job, track tid/transport, og eksporter til Excel.</p>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Nyt job</h2>
+
+    <div class="grid">
+      <div>
+        <label>Dato</label>
+        <input id="date" type="date" />
+      </div>
+      <div>
+        <label>Kategori</label>
+        <select id="category">
+          <option>Motorsport</option>
+          <option>Fodbold</option>
+          <option>Bryllup</option>
+          <option>Event</option>
+          <option>Studio</option>
+          <option>Nightclub</option>
+          <option>Andet</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Kunde</label>
+        <input id="client" placeholder="fx Seven Racing / AC Horsens" />
+      </div>
+      <div>
+        <label>Lokation</label>
+        <input id="location" placeholder="fx Jyllandsringen / Horsens" />
+      </div>
+
+      <div>
+        <label>Transport til (min)</label>
+        <input id="travelTo" type="number" min="0" step="1" placeholder="fx 45" />
+      </div>
+      <div>
+        <label>Transport fra (min)</label>
+        <input id="travelFrom" type="number" min="0" step="1" placeholder="fx 45" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="startBtn">Start tid</button>
+      <button id="stopBtn" class="secondary" disabled>Stop tid</button>
+      <button id="saveBtn" class="secondary" disabled>Gem job</button>
+    </div>
+
+    <p id="timerStatus" class="muted" style="margin-bottom:0;"></p>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="exportBtn">Eksporter CSV (Excel)</button>
+      <button id="clearBtn" class="danger">Slet alle jobs</button>
+    </div>
+
+    <div class="totals" id="totals"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Dato</th>
+          <th>Kunde</th>
+          <th>Kategori</th>
+          <th>Arbejdstid</th>
+          <th>Transport</th>
+          <th>Lokation</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const storageKey = "rsfoto_jobtracker_v1";
+  let jobs = loadJobs();
+
+  let activeTimer = null; // { startMs }
+
+  function loadJobs() {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+
+  function saveJobs() {
+    localStorage.setItem(storageKey, JSON.stringify(jobs));
+  }
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function minutesToHhMm(mins){
+    const m = Math.max(0, Math.round(mins));
+    const h = Math.floor(m/60);
+    const r = m%60;
+    return `${h}:${pad2(r)}`;
+  }
+
+  function nowISODate(){
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  }
+
+  function computeTotals(){
+    const totalJobs = jobs.length;
+    const workMins = jobs.reduce((a,j)=>a+(j.workMinutes||0),0);
+    const travelMins = jobs.reduce((a,j)=>a+(j.travelMinutes||0),0);
+
+    // kategori-tælling
+    const catCount = {};
+    for (const j of jobs) catCount[j.category] = (catCount[j.category]||0)+1;
+
+    return { totalJobs, workMins, travelMins, catCount };
+  }
+
+  function render(){
+    // totals
+    const t = computeTotals();
+    $("totals").innerHTML = `
+      <div class="stat"><div class="k">Jobs i alt</div><div class="v">${t.totalJobs}</div></div>
+      <div class="stat"><div class="k">Arbejdstid i alt</div><div class="v">${minutesToHhMm(t.workMins)}</div></div>
+      <div class="stat"><div class="k">Transport i alt</div><div class="v">${minutesToHhMm(t.travelMins)}</div></div>
+    `;
+
+    // table
+    const rows = jobs.slice().sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+    $("tbody").innerHTML = rows.map(j => `
+      <tr>
+        <td>${j.date || ""}</td>
+        <td>${escapeHtml(j.client || "")}</td>
+        <td><span class="pill">${escapeHtml(j.category||"")}</span></td>
+        <td>${minutesToHhMm(j.workMinutes||0)}</td>
+        <td>${minutesToHhMm(j.travelMinutes||0)}</td>
+        <td>${escapeHtml(j.location||"")}</td>
+      </tr>
+    `).join("");
+
+    // default date
+    if (!$("date").value) $("date").value = nowISODate();
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, (c)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  function csvEscape(s){
+    const str = String(s ?? "");
+    if (/[,"\n]/.test(str)) return `"${str.replace(/"/g,'""')}"`;
+    return str;
+  }
+
+  function exportCSV(){
+    const header = ["JobID","Dato","Kunde","Kategori","Lokation","StartISO","SlutISO","ArbejdstidMin","TransportTilMin","TransportFraMin","TransportTotalMin"];
+    const lines = [header.join(",")];
+
+    for (const j of jobs) {
+      lines.push([
+        csvEscape(j.id),
+        csvEscape(j.date),
+        csvEscape(j.client),
+        csvEscape(j.category),
+        csvEscape(j.location),
+        csvEscape(j.startISO),
+        csvEscape(j.stopISO),
+        csvEscape(j.workMinutes),
+        csvEscape(j.travelTo),
+        csvEscape(j.travelFrom),
+        csvEscape(j.travelMinutes),
+      ].join(","));
+    }
+
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rsfoto_jobtracker_${nowISODate()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function resetForm(){
+    $("client").value = "";
+    $("location").value = "";
+    $("travelTo").value = "";
+    $("travelFrom").value = "";
+    $("category").value = "Motorsport";
+    $("saveBtn").disabled = true;
+  }
+
+  // buttons
+  $("startBtn").addEventListener("click", () => {
+    if (activeTimer) return;
+    activeTimer = { startMs: Date.now(), startISO: new Date().toISOString() };
+    $("timerStatus").textContent = `Timer kører… start: ${new Date().toLocaleTimeString()}`;
+    $("startBtn").disabled = true;
+    $("stopBtn").disabled = false;
+    $("saveBtn").disabled = true;
+  });
+
+  $("stopBtn").addEventListener("click", () => {
+    if (!activeTimer) return;
+    const stopMs = Date.now();
+    const stopISO = new Date().toISOString();
+    const workMinutes = Math.round((stopMs - activeTimer.startMs) / 60000);
+
+    // gem “kladde” i memory på knappen
+    $("saveBtn").dataset.startISO = activeTimer.startISO;
+    $("saveBtn").dataset.stopISO = stopISO;
+    $("saveBtn").dataset.workMinutes = String(workMinutes);
+
+    $("timerStatus").textContent = `Stoppet. Arbejdstid: ${minutesToHhMm(workMinutes)} (klar til at gemme)`;
+    $("startBtn").disabled = false;
+    $("stopBtn").disabled = true;
+    $("saveBtn").disabled = false;
+
+    activeTimer = null;
+  });
+
+  $("saveBtn").addEventListener("click", () => {
+    const date = $("date").value || nowISODate();
+    const category = $("category").value;
+    const client = $("client").value.trim();
+    const location = $("location").value.trim();
+
+    const travelTo = Number($("travelTo").value || 0);
+    const travelFrom = Number($("travelFrom").value || 0);
+    const travelMinutes = Math.max(0, travelTo + travelFrom);
+
+    const startISO = $("saveBtn").dataset.startISO || "";
+    const stopISO = $("saveBtn").dataset.stopISO || "";
+    const workMinutes = Number($("saveBtn").dataset.workMinutes || 0);
+
+    const id = `J${Date.now()}`;
+
+    jobs.push({
+      id, date, category, client, location,
+      startISO, stopISO,
+      workMinutes,
+      travelTo, travelFrom,
+      travelMinutes
+    });
+
+    saveJobs();
+    render();
+    resetForm();
+    $("timerStatus").textContent = "Job gemt ✅";
+  });
+
+  $("exportBtn").addEventListener("click", exportCSV);
+
+  $("clearBtn").addEventListener("click", () => {
+    if (!confirm("Er du sikker på at du vil slette alle jobs?")) return;
+    jobs = [];
+    saveJobs();
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
