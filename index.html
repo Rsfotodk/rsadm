@@ -117,8 +117,9 @@
         </div>
 
         <div>
-          <label>Fakturér (beløb efter moms / inkl. moms)</label>
-          <input id="invoiceInclVat" type="number" min="0" step="0.01" placeholder="fx 2500.00" />
+          <label>Fakturér (beløb ex. moms)</label>
+          <input id="invoiceExVat" type="number" min="0" step="0.01" placeholder="fx 2000.00" />
+          <div class="small muted" id="invoiceInclPreview" style="margin-top:6px;"></div>
         </div>
         <div>
           <label>Noter</label>
@@ -186,7 +187,7 @@
             <th>Faktura nr</th>
             <th>Tid</th>
             <th>Transport</th>
-            <th>Beløb (inkl moms)</th>
+            <th>Beløb ex. moms</th>
             <th>Handling</th>
           </tr>
         </thead>
@@ -196,7 +197,7 @@
       <p class="muted" id="tableMsg"></p>
     </div>
 
-    <!-- Edit modal-ish -->
+    <!-- Edit -->
     <div id="editCard" class="card hidden">
       <h2 style="margin-top:0;">Ret job <span id="editId" class="mono"></span></h2>
 
@@ -229,8 +230,9 @@
         </div>
 
         <div>
-          <label>Beløb inkl moms</label>
-          <input id="editInvoiceInclVat" type="number" min="0" step="0.01" />
+          <label>Beløb ex. moms</label>
+          <input id="editInvoiceExVat" type="number" min="0" step="0.01" />
+          <div class="small muted" id="editInvoiceInclPreview" style="margin-top:6px;"></div>
         </div>
         <div>
           <label>Noter</label>
@@ -258,6 +260,10 @@
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const $ = (id) => document.getElementById(id);
+
+    const VAT_RATE = 0.25;
+    const inclVat = (exVat) => Math.round((Number(exVat)||0) * (1 + VAT_RATE) * 100) / 100;
+
     const fmtH = (mins) => {
       const m = Math.max(0, Math.round(Number(mins)||0));
       const h = Math.floor(m/60);
@@ -279,7 +285,7 @@
       }[c]));
     }
 
-    // Parse work text → minutes (for stats)
+    // Parse work text -> minutes (for stats)
     // Accepts:
     // - "1:30" => 90
     // - "90" => 90
@@ -315,13 +321,21 @@
       $("whoami").textContent = isIn ? `Logget ind: ${user?.email ?? ""}` : "";
     }
 
+    function updateNewInvoicePreview(){
+      const ex = $("invoiceExVat").value === "" ? null : Number($("invoiceExVat").value);
+      $("invoiceInclPreview").textContent = ex === null ? "" : `= ${inclVat(ex).toFixed(2)} inkl. moms`;
+    }
+
+    function updateEditInvoicePreview(){
+      const ex = $("editInvoiceExVat").value === "" ? null : Number($("editInvoiceExVat").value);
+      $("editInvoiceInclPreview").textContent = ex === null ? "" : `= ${inclVat(ex).toFixed(2)} inkl. moms`;
+    }
+
     async function ensureDefaultCategories(){
-      // If none exist, seed a starter pack
       if (categories.length) return;
       const starter = ["Fodbold","Håndbold","Klub","Motorsport","Event","Bryllup","Studio"];
       const inserts = starter.map(name => ({ user_id: user.id, name }));
       const { error } = await supabase.from("categories").insert(inserts);
-      // ignore unique errors
       if (error) console.warn(error);
       await loadCategories();
     }
@@ -353,7 +367,7 @@
       const { data, error } = await supabase
         .from("jobs")
         .select(`
-          id, job_date, client, invoice_no, work_minutes, work_text, travel_minutes, invoice_amount_incl_vat, notes,
+          id, job_date, client, invoice_no, work_minutes, work_text, travel_minutes, invoice_amount_ex_vat, notes,
           category_id,
           categories(name)
         `)
@@ -387,9 +401,8 @@
       const totalJobs = filtered.length;
       const totalWorkMin = filtered.reduce((a,j)=>a+(Number(j.work_minutes)||0),0);
       const totalTravelMin = filtered.reduce((a,j)=>a+(Number(j.travel_minutes)||0),0);
-      const totalInvoice = filtered.reduce((a,j)=>a+(Number(j.invoice_amount_incl_vat)||0),0);
+      const totalInvoiceEx = filtered.reduce((a,j)=>a+(Number(j.invoice_amount_ex_vat)||0),0);
 
-      // by category
       const catMap = new Map();
       for (const j of filtered) {
         const key = j.category_name || "(Ingen)";
@@ -399,7 +412,6 @@
         catMap.set(key, cur);
       }
 
-      // by month
       const monthMap = new Map();
       for (const j of filtered) {
         const y = String(j.job_date||"").slice(0,4);
@@ -409,16 +421,22 @@
         monthMap.set(key, (monthMap.get(key)||0) + (Number(j.work_minutes)||0));
       }
 
-      return { totalJobs, totalWorkMin, totalTravelMin, totalInvoice, catMap, monthMap };
+      return { totalJobs, totalWorkMin, totalTravelMin, totalInvoiceEx, catMap, monthMap };
     }
 
     function renderStats(filtered){
       const s = computeStats(filtered);
+      const totalInvoiceIncl = inclVat(s.totalInvoiceEx);
+
       $("totals").innerHTML = `
         <div class="stat"><div class="k">Jobs i alt</div><div class="v">${s.totalJobs}</div></div>
         <div class="stat"><div class="k">Arbejdstid i alt</div><div class="v">${fmtH(s.totalWorkMin)}</div></div>
         <div class="stat"><div class="k">Transport i alt</div><div class="v">${fmtH(s.totalTravelMin)}</div></div>
-        <div class="stat"><div class="k">Fakturering (inkl moms)</div><div class="v">${s.totalInvoice.toFixed(2)}</div></div>
+        <div class="stat">
+          <div class="k">Fakturering ex. moms</div>
+          <div class="v">${s.totalInvoiceEx.toFixed(2)}</div>
+          <div class="small muted">(${totalInvoiceIncl.toFixed(2)} inkl. moms)</div>
+        </div>
       `;
 
       const catRows = Array.from(s.catMap.entries())
@@ -453,7 +471,7 @@
 
         const hay = [
           j.id, j.client, j.invoice_no, j.category_name,
-          String(j.invoice_amount_incl_vat ?? "")
+          String(j.invoice_amount_ex_vat ?? "")
         ].join(" ").toLowerCase();
 
         return hay.includes(q);
@@ -461,23 +479,29 @@
     }
 
     function renderJobsTable(filtered){
-      $("jobsTbody").innerHTML = filtered.map(j => `
-        <tr>
-          <td class="mono">${escapeHtml(j.id)}</td>
-          <td>${escapeHtml(j.job_date)}</td>
-          <td>${escapeHtml(j.client || "")}</td>
-          <td><span class="pill">${escapeHtml(j.category_name || "(Ingen)")}</span></td>
-          <td>${escapeHtml(j.invoice_no || "")}</td>
-          <td>${fmtH(j.work_minutes || 0)}</td>
-          <td>${fmtH(j.travel_minutes || 0)}</td>
-          <td>${Number(j.invoice_amount_incl_vat||0).toFixed(2)}</td>
-          <td>
-            <button class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button>
-          </td>
-        </tr>
-      `).join("");
+      $("jobsTbody").innerHTML = filtered.map(j => {
+        const ex = Number(j.invoice_amount_ex_vat || 0);
+        const incl = inclVat(ex);
+        return `
+          <tr>
+            <td class="mono">${escapeHtml(j.id)}</td>
+            <td>${escapeHtml(j.job_date)}</td>
+            <td>${escapeHtml(j.client || "")}</td>
+            <td><span class="pill">${escapeHtml(j.category_name || "(Ingen)")}</span></td>
+            <td>${escapeHtml(j.invoice_no || "")}</td>
+            <td>${fmtH(j.work_minutes || 0)}</td>
+            <td>${fmtH(j.travel_minutes || 0)}</td>
+            <td>
+              ${ex.toFixed(2)}<br>
+              <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
+            </td>
+            <td>
+              <button class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
 
-      // bind edit buttons
       document.querySelectorAll("button[data-edit]").forEach(btn => {
         btn.addEventListener("click", () => openEdit(btn.getAttribute("data-edit")));
       });
@@ -490,9 +514,8 @@
       renderJobsTable(filtered);
     }
 
-    // CSV export
     function exportCSV(filtered){
-      const header = ["JobID","Dato","Kunde","Kategori","FakturaNr","WorkMin","WorkText","TransportMin","BeløbInclMoms","Noter"];
+      const header = ["JobID","Dato","Kunde","Kategori","FakturaNr","WorkMin","WorkText","TransportMin","BeløbExMoms","BeløbInclMoms","Noter"];
       const lines = [header.join(",")];
 
       const esc = (s) => {
@@ -501,6 +524,8 @@
       };
 
       for (const j of filtered) {
+        const ex = Number(j.invoice_amount_ex_vat || 0);
+        const incl = inclVat(ex);
         lines.push([
           esc(j.id),
           esc(j.job_date),
@@ -510,7 +535,8 @@
           esc(j.work_minutes),
           esc(j.work_text),
           esc(j.travel_minutes),
-          esc(j.invoice_amount_incl_vat),
+          esc(ex.toFixed(2)),
+          esc(incl.toFixed(2)),
           esc(j.notes),
         ].join(","));
       }
@@ -561,11 +587,10 @@
       const email = $("email").value.trim();
       const password = $("password").value;
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ email, password });
       if (error) { $("loginMsg").textContent = error.message; return; }
 
       $("loginMsg").textContent = "Bruger oprettet. Log ind med samme email/password.";
-      // Nogle projekter kræver email-confirmation afhængig af Supabase settings.
     });
 
     $("logoutBtn").addEventListener("click", async () => {
@@ -604,10 +629,9 @@
       const work_minutes = parseWorkMinutes(work_text);
 
       const travel_minutes = Math.max(0, Number($("travelMinutes").value || 0));
-      const invoice_amount_incl_vat = $("invoiceInclVat").value === "" ? null : Number($("invoiceInclVat").value);
+      const invoice_amount_ex_vat = $("invoiceExVat").value === "" ? null : Number($("invoiceExVat").value);
       const notes = $("notes").value.trim() || null;
 
-      // Insert without id — DB assigns YYxxxx automatically
       const { error } = await supabase.from("jobs").insert({
         user_id: user.id,
         invoice_no,
@@ -617,7 +641,7 @@
         work_minutes,
         work_text,
         travel_minutes,
-        invoice_amount_incl_vat,
+        invoice_amount_ex_vat,
         notes
       });
 
@@ -635,7 +659,8 @@
       $("client").value = "";
       $("workText").value = "";
       $("travelMinutes").value = "";
-      $("invoiceInclVat").value = "";
+      $("invoiceExVat").value = "";
+      $("invoiceInclPreview").textContent = "";
       $("notes").value = "";
     }
 
@@ -656,9 +681,10 @@
       $("editClient").value = j.client ?? "";
       $("editWorkText").value = j.work_text ?? "";
       $("editTravelMinutes").value = j.travel_minutes ?? 0;
-      $("editInvoiceInclVat").value = j.invoice_amount_incl_vat ?? "";
+      $("editInvoiceExVat").value = j.invoice_amount_ex_vat ?? "";
       $("editNotes").value = j.notes ?? "";
 
+      updateEditInvoicePreview();
       $("editMsg").textContent = "";
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }
@@ -683,7 +709,7 @@
         work_text,
         work_minutes,
         travel_minutes: Math.max(0, Number($("editTravelMinutes").value || 0)),
-        invoice_amount_incl_vat: $("editInvoiceInclVat").value === "" ? null : Number($("editInvoiceInclVat").value),
+        invoice_amount_ex_vat: $("editInvoiceExVat").value === "" ? null : Number($("editInvoiceExVat").value),
         notes: $("editNotes").value.trim() || null
       };
 
@@ -718,10 +744,13 @@
       exportCSV(filtered);
     });
 
+    // Invoice previews
+    $("invoiceExVat").addEventListener("input", updateNewInvoicePreview);
+    $("editInvoiceExVat").addEventListener("input", updateEditInvoicePreview);
+
     // Initial
     await checkSession();
 
-    // keep UI in sync on auth changes
     supabase.auth.onAuthStateChange(async (_event, session) => {
       user = session?.user ?? null;
       setLoggedInUI(!!user);
