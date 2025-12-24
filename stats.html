@@ -1,1 +1,177 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RSADM – Statistik</title>
 
+  <style>
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin: 24px; max-width: 1200px; }
+    h1 { margin: 0 0 6px; }
+    .muted { color:#555; }
+    .card { border:1px solid #e8e8e8; border-radius:16px; padding:16px; margin-top:16px; }
+    .grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
+    label { font-size:12px; color:#333; }
+    select, button { padding:10px; border-radius:12px; border:1px solid #ccc; }
+    button { background:#111; color:#fff; cursor:pointer; }
+    table { width:100%; border-collapse: collapse; margin-top:12px; }
+    th, td { border-bottom:1px solid #eee; padding:8px; font-size:13px; text-align:left; }
+    th { text-transform:uppercase; font-size:12px; color:#666; }
+    .stat { border:1px solid #eee; border-radius:14px; padding:12px; }
+    .stat .k { font-size:12px; color:#666; }
+    .stat .v { font-size:20px; font-weight:700; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+
+<body>
+  <h1>RSADM – Statistik</h1>
+  <p class="muted">Overblik og rapporter – kun læsning.</p>
+
+  <!-- KPI -->
+  <div class="card">
+    <h2>Overblik</h2>
+    <div class="grid" id="kpis"></div>
+  </div>
+
+  <!-- Jobs pr kategori -->
+  <div class="card">
+    <h2>Jobs pr. kategori</h2>
+    <table>
+      <thead>
+        <tr><th>Kategori</th><th>Jobs</th><th>Timer</th></tr>
+      </thead>
+      <tbody id="byCategory"></tbody>
+    </table>
+  </div>
+
+  <!-- Timer pr måned -->
+  <div class="card">
+    <h2>Timer pr. måned</h2>
+    <table>
+      <thead>
+        <tr><th>Måned</th><th>Timer</th></tr>
+      </thead>
+      <tbody id="byMonth"></tbody>
+    </table>
+  </div>
+
+  <!-- Månedsrapport pr kunde -->
+  <div class="card">
+    <h2>Månedsrapport pr. kunde</h2>
+
+    <div class="grid">
+      <div>
+        <label>Måned</label>
+        <select id="monthFilter"></select>
+      </div>
+      <div>
+        <label>Kunde</label>
+        <select id="clientFilter"></select>
+      </div>
+      <div style="align-self:end;">
+        <button id="exportBtn">Eksport CSV</button>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Måned</th>
+          <th>Kunde</th>
+          <th>Jobs</th>
+          <th>Arbejdstid</th>
+          <th>Transport</th>
+          <th>Fakturering ex. moms</th>
+        </tr>
+      </thead>
+      <tbody id="reportBody"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://epzbdezmbyyduqjthdzt.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwemJkZXptYnl5ZHVxanRoZHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDU3MzAsImV4cCI6MjA4MjA4MTczMH0.d_-8frGdHnvBO6smGThEUI81KUWI39rp5VX65O_HauU";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const VAT = 1.25;
+    const $ = id => document.getElementById(id);
+
+    const fmtH = m => `${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;
+
+    async function loadAll() {
+      const { data, error } = await supabase
+        .from("v_monthly_client_report")
+        .select("*")
+        .order("ym", { ascending:false });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      // KPIs
+      const totalJobs = data.reduce((a,r)=>a+r.jobs,0);
+      const workMin = data.reduce((a,r)=>a+r.work_minutes,0);
+      const travelMin = data.reduce((a,r)=>a+r.travel_minutes,0);
+      const invoiceEx = data.reduce((a,r)=>a+Number(r.invoice_ex_vat||0),0);
+
+      $("kpis").innerHTML = `
+        <div class="stat"><div class="k">Jobs</div><div class="v">${totalJobs}</div></div>
+        <div class="stat"><div class="k">Arbejdstid</div><div class="v">${fmtH(workMin)}</div></div>
+        <div class="stat"><div class="k">Transport</div><div class="v">${fmtH(travelMin)}</div></div>
+        <div class="stat"><div class="k">Fakturering ex moms</div><div class="v">${invoiceEx.toFixed(2)}</div></div>
+      `;
+
+      // Dropdowns
+      const months = [...new Set(data.map(r=>r.ym))];
+      const clients = [...new Set(data.map(r=>r.client))];
+
+      $("monthFilter").innerHTML = `<option value="">Alle</option>` + months.map(m=>`<option>${m}</option>`).join("");
+      $("clientFilter").innerHTML = `<option value="">Alle</option>` + clients.map(c=>`<option>${c}</option>`).join("");
+
+      renderReport(data);
+      $("monthFilter").onchange = () => renderReport(data);
+      $("clientFilter").onchange = () => renderReport(data);
+
+      $("exportBtn").onclick = () => exportCSV(renderFiltered(data));
+    }
+
+    function renderFiltered(data){
+      const m = $("monthFilter").value;
+      const c = $("clientFilter").value;
+      return data.filter(r => (!m || r.ym===m) && (!c || r.client===c));
+    }
+
+    function renderReport(data){
+      const rows = renderFiltered(data);
+      $("reportBody").innerHTML = rows.map(r=>`
+        <tr>
+          <td>${r.ym}</td>
+          <td>${r.client}</td>
+          <td>${r.jobs}</td>
+          <td>${fmtH(r.work_minutes)}</td>
+          <td>${fmtH(r.travel_minutes)}</td>
+          <td>${Number(r.invoice_ex_vat).toFixed(2)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function exportCSV(rows){
+      let csv = "Måned,Kunde,Jobs,Arbejdstid,Transport,Fakturering ex moms\n";
+      rows.forEach(r=>{
+        csv += `${r.ym},${r.client},${r.jobs},${fmtH(r.work_minutes)},${fmtH(r.travel_minutes)},${r.invoice_ex_vat}\n`;
+      });
+      const blob = new Blob([csv], {type:"text/csv"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "rsadm_statistik.csv";
+      a.click();
+    }
+
+    loadAll();
+  </script>
+</body>
+</html>
