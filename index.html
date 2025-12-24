@@ -108,7 +108,7 @@
         </div>
 
         <div>
-          <label>Tid brugt (skriv i minutter)</label>
+          <label>Tid brugt (skriv i minutter / 1:30 / 2t 15m)</label>
           <input id="workText" placeholder="fx 2:15" />
         </div>
         <div>
@@ -140,44 +140,6 @@
       <h2 style="margin-top:0;">Overblik</h2>
       <div class="totals" id="totals"></div>
 
-      <!-- Report -->
-<div class="card" id="reportCard">
-  <h2 style="margin-top:0;">Månedsrapport pr. kunde</h2>
-
-  <div class="grid">
-    <div>
-      <label>Måned</label>
-      <select id="reportMonth"></select>
-    </div>
-    <div>
-      <label>Kunde</label>
-      <select id="reportClient"></select>
-    </div>
-  </div>
-
-  <div class="row" style="margin-top:12px;">
-    <button id="reportRefreshBtn" class="secondary">Opdater rapport</button>
-    <button id="reportExportBtn">Eksport rapport CSV</button>
-  </div>
-
-  <table style="margin-top:12px;">
-    <thead>
-      <tr>
-        <th>Måned</th>
-        <th>Kunde</th>
-        <th>Jobs</th>
-        <th>Arbejdstid</th>
-        <th>Transport</th>
-        <th>Fakturering ex. moms</th>
-      </tr>
-    </thead>
-    <tbody id="reportTbody"></tbody>
-  </table>
-
-  <p class="muted" id="reportMsg"></p>
-</div>
-
-
       <div class="grid" style="margin-top:12px;">
         <div>
           <h3 style="margin:0 0 8px;">Jobs pr. kategori</h3>
@@ -194,6 +156,43 @@
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- Report (own card) -->
+    <div class="card" id="reportCard">
+      <h2 style="margin-top:0;">Månedsrapport pr. kunde</h2>
+
+      <div class="grid">
+        <div>
+          <label>Måned</label>
+          <select id="reportMonth"></select>
+        </div>
+        <div>
+          <label>Kunde</label>
+          <select id="reportClient"></select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="reportRefreshBtn" class="secondary">Opdater rapport</button>
+        <button id="reportExportBtn">Eksport rapport CSV</button>
+      </div>
+
+      <table style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th>Måned</th>
+            <th>Kunde</th>
+            <th>Jobs</th>
+            <th>Arbejdstid</th>
+            <th>Transport</th>
+            <th>Fakturering ex. moms</th>
+          </tr>
+        </thead>
+        <tbody id="reportTbody"></tbody>
+      </table>
+
+      <p class="muted" id="reportMsg"></p>
     </div>
 
     <!-- Jobs table -->
@@ -291,7 +290,6 @@
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    // 🔧 UDFYLD DISSE:
     const SUPABASE_URL = "https://epzbdezmbyyduqjthdzt.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwemJkZXptYnl5ZHVxanRoZHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDU3MzAsImV4cCI6MjA4MjA4MTczMH0.d_-8frGdHnvBO6smGThEUI81KUWI39rp5VX65O_HauU";
 
@@ -323,11 +321,7 @@
       }[c]));
     }
 
-    // Parse work text -> minutes (for stats)
-    // Accepts:
-    // - "1:30" => 90
-    // - "90" => 90
-    // - "2t 15m" / "2h 15m" => 135
+    // Parse work text -> minutes
     function parseWorkMinutes(input){
       const s = String(input ?? "").trim().toLowerCase();
       if (!s) return 0;
@@ -351,6 +345,9 @@
     let categories = [];
     let jobs = [];
     let editingId = null;
+
+    // --- REPORT STATE ---
+    let reportRows = [];
 
     function setLoggedInUI(isIn){
       $("loginCard").classList.toggle("hidden", isIn);
@@ -590,6 +587,124 @@
       URL.revokeObjectURL(url);
     }
 
+    // ---------------- REPORT (monthly per client) ----------------
+    function setSelectOptions(selectEl, values, placeholder = "(Alle)") {
+      const opts = values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+      selectEl.innerHTML = `<option value="">${placeholder}</option>` + opts;
+    }
+
+    async function loadReportRows(){
+      $("reportMsg").textContent = "Henter rapport…";
+
+      const { data, error } = await supabase
+        .from("v_monthly_client_report")
+        .select("ym,client,jobs,work_minutes,travel_minutes,invoice_ex_vat")
+        .eq("user_id", user.id)
+        .order("ym", { ascending: false })
+        .order("client", { ascending: true });
+
+      if (error) {
+        $("reportMsg").textContent = `Fejl: ${error.message}`;
+        reportRows = [];
+        renderReport();
+        return;
+      }
+
+      reportRows = data ?? [];
+      $("reportMsg").textContent = "";
+
+      const months = Array.from(new Set(reportRows.map(r => r.ym))).sort((a,b)=>b.localeCompare(a));
+      const clients = Array.from(new Set(reportRows.map(r => r.client))).sort((a,b)=>a.localeCompare(b));
+
+      setSelectOptions($("reportMonth"), months, "(Alle måneder)");
+      setSelectOptions($("reportClient"), clients, "(Alle kunder)");
+
+      // Auto-vælg seneste måned første gang
+      if (!$("reportMonth").dataset.initialized) {
+        $("reportMonth").value = months[0] || "";
+        $("reportMonth").dataset.initialized = "1";
+      }
+
+      renderReport();
+    }
+
+    function getFilteredReportRows(){
+      const m = $("reportMonth").value;
+      const c = $("reportClient").value;
+
+      return reportRows.filter(r => {
+        if (m && r.ym !== m) return false;
+        if (c && r.client !== c) return false;
+        return true;
+      });
+    }
+
+    function renderReport(){
+      const rows = getFilteredReportRows();
+
+      if (!rows.length) {
+        $("reportTbody").innerHTML = `<tr><td colspan="6" class="muted">Ingen rapport-data for det valg</td></tr>`;
+        return;
+      }
+
+      $("reportTbody").innerHTML = rows.map(r => {
+        const ex = Number(r.invoice_ex_vat || 0);
+        const incl = inclVat(ex);
+        return `
+          <tr>
+            <td>${escapeHtml(r.ym)}</td>
+            <td>${escapeHtml(r.client)}</td>
+            <td>${Number(r.jobs || 0)}</td>
+            <td>${fmtH(r.work_minutes || 0)}</td>
+            <td>${fmtH(r.travel_minutes || 0)}</td>
+            <td>
+              ${ex.toFixed(2)}<br>
+              <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function exportReportCSV(){
+      const rows = getFilteredReportRows();
+
+      const header = ["Måned","Kunde","Jobs","WorkMin","WorkTimer","TransportMin","TransportTimer","FaktureringExMoms","FaktureringInclMoms"];
+      const lines = [header.join(",")];
+
+      const esc = (s) => {
+        const str = String(s ?? "");
+        return /[,"\n]/.test(str) ? `"${str.replace(/"/g,'""')}"` : str;
+      };
+
+      for (const r of rows) {
+        const ex = Number(r.invoice_ex_vat || 0);
+        const incl = inclVat(ex);
+        lines.push([
+          esc(r.ym),
+          esc(r.client),
+          esc(r.jobs),
+          esc(r.work_minutes),
+          esc(fmtH(r.work_minutes)),
+          esc(r.travel_minutes),
+          esc(fmtH(r.travel_minutes)),
+          esc(ex.toFixed(2)),
+          esc(incl.toFixed(2)),
+        ].join(","));
+      }
+
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rsadm_report_${todayISO()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+    // -------------------------------------------------------------
+
     // AUTH
     async function checkSession(){
       const { data } = await supabase.auth.getSession();
@@ -601,6 +716,7 @@
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
+        await loadReportRows(); // 👈 report auto-load
       }
     }
 
@@ -618,6 +734,7 @@
       await loadCategories();
       await ensureDefaultCategories();
       await loadJobs();
+      await loadReportRows(); // 👈 report auto-load
     });
 
     $("signupBtn").addEventListener("click", async () => {
@@ -636,6 +753,7 @@
       user = null;
       categories = [];
       jobs = [];
+      reportRows = [];
       setLoggedInUI(false);
     });
 
@@ -688,6 +806,7 @@
       $("jobMsg").textContent = "Job gemt ✅ (ID er genereret automatisk)";
       resetJobForm();
       await loadJobs();
+      await loadReportRows(); // 👈 update report
     });
 
     function resetJobForm(){
@@ -756,6 +875,7 @@
 
       $("editMsg").textContent = "Rettet ✅";
       await loadJobs();
+      await loadReportRows(); // 👈 update report
       $("editCard").classList.add("hidden");
       editingId = null;
     });
@@ -768,12 +888,13 @@
       if (error) { $("editMsg").textContent = error.message; return; }
 
       await loadJobs();
+      await loadReportRows(); // 👈 update report
       $("editCard").classList.add("hidden");
       editingId = null;
     });
 
     // Filters & actions
-    $("refreshBtn").addEventListener("click", loadJobs);
+    $("refreshBtn").addEventListener("click", async () => { await loadJobs(); await loadReportRows(); });
     $("search").addEventListener("input", renderAll);
     $("yearFilter").addEventListener("change", renderAll);
 
@@ -781,6 +902,12 @@
       const filtered = filterJobs();
       exportCSV(filtered);
     });
+
+    // Report actions
+    $("reportRefreshBtn").addEventListener("click", loadReportRows);
+    $("reportExportBtn").addEventListener("click", exportReportCSV);
+    $("reportMonth").addEventListener("change", renderReport);
+    $("reportClient").addEventListener("change", renderReport);
 
     // Invoice previews
     $("invoiceExVat").addEventListener("input", updateNewInvoicePreview);
@@ -797,6 +924,7 @@
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
+        await loadReportRows(); // 👈 report auto-load
       }
     });
   </script>
