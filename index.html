@@ -4,302 +4,468 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RSADM – Job & Faktura Overblik</title>
+
   <style>
-    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin: 24px; max-width: 1200px; }
-    h1 { margin: 0 0 6px; }
-    .muted { color:#555; margin: 6px 0 0; }
-    .card { border:1px solid #e8e8e8; border-radius:16px; padding:16px; margin-top:16px; }
-    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
-    label { display:block; font-size:12px; color:#333; margin: 0 0 6px; }
-    input, select, textarea { width:100%; padding:10px; border:1px solid #ccc; border-radius:12px; font-size:14px; box-sizing:border-box; }
-    button { width:auto; padding:10px 14px; border:none; background:#111; color:#fff; cursor:pointer; border-radius:12px; font-size:14px; box-sizing:border-box; }
-    textarea { min-height: 38px; resize: vertical; }
-    button { border:none; background:#111; color:#fff; cursor:pointer; }
-    button.secondary { background:#eee; color:#111; border:1px solid #ccc; }
-    button.danger { background:#b00020; }
-    button:disabled { opacity:.55; cursor:not-allowed; }
-    .row { display:flex; gap:10px; align-items:stretch; }
-    .row > * { flex:1; }
-    table { width:100%; border-collapse: collapse; margin-top:10px; }
-    th, td { border-bottom:1px solid #eee; padding:10px 6px; font-size:13px; text-align:left; vertical-align: top; }
-    th { font-size:12px; color:#555; text-transform: uppercase; letter-spacing: .04em; }
-    .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#f2f2f2; font-size:12px; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    .totals { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:12px; }
-    .stat { border:1px solid #eee; border-radius:14px; padding:12px; }
-    .stat .k { font-size:12px; color:#666; }
-    .stat .v { font-size:20px; font-weight:700; }
-    .hidden { display:none !important; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; }
-    .topbar .right { display:flex; gap:10px; align-items:center; }
-    .small { font-size:12px; color:#666; }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .totals { grid-template-columns: 1fr; } .topbar { flex-direction: column; } }
-    .topbar .right a { text-decoration: none; }
+    :root{
+      --maxw: 1200px;
+      --pad: 24px;
+      --border: #e8e8e8;
+      --muted: #555;
+      --muted2:#666;
+      --bg: #fff;
+      --btn: #111;
+      --btnText:#fff;
+      --btn2:#eee;
+      --btn2Text:#111;
+      --danger:#b00020;
+      --shadow: 0 6px 18px rgba(0,0,0,.06);
+    }
 
-    body { margin: 0; }
+    *{ box-sizing: border-box; }
 
-.wrap { 
-  max-width: 1200px; 
-  margin: 24px auto; 
-  padding: 0 24px; 
-}
+    body{
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color:#111;
+    }
 
+    .wrap{
+      max-width: var(--maxw);
+      margin: 24px auto;
+      padding: 0 var(--pad);
+    }
+
+    h1{ margin: 0 0 6px; }
+    h2{ margin: 0; }
+    h3{ margin: 0; }
+
+    .muted{ color: var(--muted); margin: 6px 0 0; }
+    .small{ font-size: 12px; color: var(--muted2); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .card{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 16px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 12px;
+    }
+
+    .topbar .right{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label{
+      display:block;
+      font-size: 12px;
+      color:#333;
+      margin: 0 0 6px;
+    }
+
+    input, select, textarea{
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      font-size: 14px;
+      background:#fff;
+    }
+
+    textarea{ min-height: 38px; resize: vertical; }
+
+    button{
+      width:auto;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 12px;
+      background: var(--btn);
+      color: var(--btnText);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button.secondary{
+      background: var(--btn2);
+      color: var(--btn2Text);
+      border: 1px solid #ccc;
+    }
+
+    button.danger{ background: var(--danger); }
+
+    button:disabled{
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .row{
+      display:flex;
+      gap: 10px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .row > *{ flex: 1; min-width: 200px; }
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td{
+      border-bottom: 1px solid #eee;
+      padding: 10px 6px;
+      font-size: 13px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th{
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .pill{
+      display:inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background:#f2f2f2;
+      font-size: 12px;
+    }
+
+    .totals{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .stat{
+      border: 1px solid #eee;
+      border-radius: 14px;
+      padding: 12px;
+      background:#fff;
+    }
+
+    .stat .k{ font-size: 12px; color: var(--muted2); }
+    .stat .v{ font-size: 20px; font-weight: 700; }
+
+    .hidden{ display:none !important; }
+
+    /* Gør link-knap pæn uden at wrappe button i <a> */
+    .linkbtn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--btn2);
+      color: var(--btn2Text);
+      border: 1px solid #ccc;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    @media (max-width: 900px){
+      .grid{ grid-template-columns: 1fr; }
+      .totals{ grid-template-columns: 1fr; }
+      .topbar{ flex-direction: column; align-items: flex-start; }
+      .topbar .right{ justify-content: flex-start; }
+    }
   </style>
 </head>
+
 <body>
   <div class="wrap">
+
     <div class="topbar">
-    <div>
-      <h1>RSADM – Job & Faktura Overblik</h1>
-      <p class="muted">Login → opret jobs → ret jobs → statistik pr. kategori og måned.</p>
-    </div>
-    <div class="right">
-      <a href="stats.html">
-        <button class="secondary">📊 Statistik</button>
-      </a>
-      <div id="whoami" class="small"></div>
-      <button id="logoutBtn" class="secondary hidden">Log ud</button>
-    </div>
-
-  <!-- LOGIN -->
-  <div id="loginCard" class="card">
-    <h2 style="margin-top:0;">Login</h2>
-    <div class="grid">
       <div>
-        <label>Email</label>
-        <input id="email" type="email" placeholder="din@email.dk" />
+        <h1>RSADM – Job & Faktura Overblik</h1>
+        <p class="muted">Login → opret jobs → ret jobs → statistik pr. kategori og måned.</p>
       </div>
-      <div>
-        <label>Password</label>
-        <input id="password" type="password" placeholder="••••••••" />
+
+      <div class="right">
+        <a class="linkbtn" href="stats.html">📊 Statistik</a>
+        <div id="whoami" class="small"></div>
+        <button id="logoutBtn" type="button" class="secondary hidden">Log ud</button>
       </div>
     </div>
-    <div class="row" style="margin-top:12px;">
-      <button id="loginBtn">Log ind</button>
-      <button id="signupBtn" class="secondary">Opret bruger</button>
-    </div>
-    <p id="loginMsg" class="muted"></p>
-  </div>
+    <!-- ✅ VIGTIGT: topbar er nu korrekt lukket -->
 
-  <!-- APP -->
-  <div id="app" class="hidden">
-    <!-- Categories -->
-    <div class="card">
-      <h2 style="margin-top:0;">Kategorier</h2>
-      <div class="row">
-        <div>
-          <label>Ny kategori</label>
-          <input id="newCategory" placeholder="fx Fodbold / Håndbold / Klub / Motorsport" />
-        </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button id="addCategoryBtn">Tilføj kategori</button>
-        </div>
-      </div>
-      <p class="muted" id="catMsg"></p>
-    </div>
-
-    <!-- New job -->
-    <div class="card">
-      <h2 style="margin-top:0;">Nyt job</h2>
-
-      <div class="grid">
-        <div>
-          <label>Faktura nummer (dit eget)</label>
-          <input id="invoiceNo" placeholder="fx 2025-001 / e-conomic nr." />
-        </div>
-        <div>
-          <label>Dato</label>
-          <input id="jobDate" type="date" />
-        </div>
-
-        <div>
-          <label>Kategori</label>
-          <select id="categorySelect"></select>
-        </div>
-        <div>
-          <label>Kunde</label>
-          <input id="client" placeholder="fx Seven Racing / AC Horsens" />
-        </div>
-
-        <div>
-          <label>Tid brugt (skriv i minutter / 1:30 / 2t 15m)</label>
-          <input id="workText" placeholder="fx 2:15" />
-        </div>
-        <div>
-          <label>Transport total (minutter)</label>
-          <input id="travelMinutes" type="number" min="0" step="1" placeholder="fx 90" />
-        </div>
-
-        <div>
-          <label>Fakturér (beløb ex. moms)</label>
-          <input id="invoiceExVat" type="number" min="0" step="0.01" placeholder="fx 2000.00" />
-          <div class="small muted" id="invoiceInclPreview" style="margin-top:6px;"></div>
-        </div>
-        <div>
-          <label>Noter</label>
-          <input id="notes" placeholder="fx levering / særlige aftaler" />
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:12px;">
-        <button id="createJobBtn">Gem job</button>
-        <button id="resetJobBtn" class="secondary">Nulstil felter</button>
-      </div>
-
-      <p id="jobMsg" class="muted"></p>
-    </div>
-
-    <!-- Stats -->
-    <div class="card">
-      <h2 style="margin-top:0;">Overblik</h2>
-      <div class="totals" id="totals"></div>
+    <!-- LOGIN -->
+    <div id="loginCard" class="card">
+      <h2>Login</h2>
 
       <div class="grid" style="margin-top:12px;">
         <div>
-          <h3 style="margin:0 0 8px;">Jobs pr. kategori</h3>
-          <table>
-            <thead><tr><th>Kategori</th><th>Antal</th><th>Timer</th></tr></thead>
-            <tbody id="byCategory"></tbody>
-          </table>
+          <label>Email</label>
+          <input id="email" type="email" placeholder="din@email.dk" />
         </div>
         <div>
-          <h3 style="margin:0 0 8px;">Timer pr. måned</h3>
-          <table>
-            <thead><tr><th>Måned</th><th>Timer</th></tr></thead>
-            <tbody id="byMonth"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Report (own card) -->
-    <div class="card" id="reportCard">
-      <h2 style="margin-top:0;">Månedsrapport pr. kunde</h2>
-
-      <div class="grid">
-        <div>
-          <label>Måned</label>
-          <select id="reportMonth"></select>
-        </div>
-        <div>
-          <label>Kunde</label>
-          <select id="reportClient"></select>
+          <label>Password</label>
+          <input id="password" type="password" placeholder="••••••••" />
         </div>
       </div>
 
       <div class="row" style="margin-top:12px;">
-        <button id="reportRefreshBtn" class="secondary">Opdater rapport</button>
-        <button id="reportExportBtn">Eksport rapport CSV</button>
+        <button id="loginBtn" type="button">Log ind</button>
+        <button id="signupBtn" type="button" class="secondary">Opret bruger</button>
       </div>
 
-      <table style="margin-top:12px;">
-        <thead>
-          <tr>
-            <th>Måned</th>
-            <th>Kunde</th>
-            <th>Jobs</th>
-            <th>Arbejdstid</th>
-            <th>Transport</th>
-            <th>Fakturering ex. moms</th>
-          </tr>
-        </thead>
-        <tbody id="reportTbody"></tbody>
-      </table>
-
-      <p class="muted" id="reportMsg"></p>
+      <p id="loginMsg" class="muted"></p>
     </div>
 
-    <!-- Jobs table -->
-    <div class="card">
-      <div class="row" style="align-items:flex-end;">
-        <div>
-          <label>Søg (kunde, kategori, id, faktura nr.)</label>
-          <input id="search" placeholder="fx seven / 2500 / klub" />
+    <!-- APP -->
+    <div id="app" class="hidden">
+
+      <!-- Categories -->
+      <div class="card">
+        <h2>Kategorier</h2>
+
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label>Ny kategori</label>
+            <input id="newCategory" placeholder="fx Fodbold / Håndbold / Klub / Motorsport" />
+          </div>
+          <div style="display:flex; align-items:flex-end;">
+            <button id="addCategoryBtn" type="button">Tilføj kategori</button>
+          </div>
         </div>
-        <div>
-          <label>År (filter)</label>
-          <select id="yearFilter">
-            <option value="">Alle</option>
-          </select>
+
+        <p class="muted" id="catMsg"></p>
+      </div>
+
+      <!-- New job -->
+      <div class="card">
+        <h2>Nyt job</h2>
+
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <label>Faktura nummer (dit eget)</label>
+            <input id="invoiceNo" placeholder="fx 2025-001 / e-conomic nr." />
+          </div>
+          <div>
+            <label>Dato</label>
+            <input id="jobDate" type="date" />
+          </div>
+
+          <div>
+            <label>Kategori</label>
+            <select id="categorySelect"></select>
+          </div>
+          <div>
+            <label>Kunde</label>
+            <input id="client" placeholder="fx Seven Racing / AC Horsens" />
+          </div>
+
+          <div>
+            <label>Tid brugt (skriv i minutter / 1:30 / 2t 15m)</label>
+            <input id="workText" placeholder="fx 2:15" />
+          </div>
+          <div>
+            <label>Transport total (minutter)</label>
+            <input id="travelMinutes" type="number" min="0" step="1" placeholder="fx 90" />
+          </div>
+
+          <div>
+            <label>Fakturér (beløb ex. moms)</label>
+            <input id="invoiceExVat" type="number" min="0" step="0.01" placeholder="fx 2000.00" />
+            <div class="small muted" id="invoiceInclPreview" style="margin-top:6px;"></div>
+          </div>
+          <div>
+            <label>Noter</label>
+            <input id="notes" placeholder="fx levering / særlige aftaler" />
+          </div>
         </div>
-        <div style="display:flex; gap:10px;">
-          <button id="refreshBtn" class="secondary">Opdater</button>
-          <button id="exportBtn">Eksport CSV</button>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="createJobBtn" type="button">Gem job</button>
+          <button id="resetJobBtn" type="button" class="secondary">Nulstil felter</button>
+        </div>
+
+        <p id="jobMsg" class="muted"></p>
+      </div>
+
+      <!-- Stats -->
+      <div class="card">
+        <h2>Overblik</h2>
+
+        <div class="totals" id="totals"></div>
+
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <h3 style="margin:0 0 8px;">Jobs pr. kategori</h3>
+            <table>
+              <thead><tr><th>Kategori</th><th>Antal</th><th>Timer</th></tr></thead>
+              <tbody id="byCategory"></tbody>
+            </table>
+          </div>
+
+          <div>
+            <h3 style="margin:0 0 8px;">Timer pr. måned</h3>
+            <table>
+              <thead><tr><th>Måned</th><th>Timer</th></tr></thead>
+              <tbody id="byMonth"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Dato</th>
-            <th>Kunde</th>
-            <th>Kategori</th>
-            <th>Faktura nr</th>
-            <th>Tid</th>
-            <th>Transport</th>
-            <th>Beløb ex. moms</th>
-            <th>Handling</th>
-          </tr>
-        </thead>
-        <tbody id="jobsTbody"></tbody>
-      </table>
+      <!-- Report (own card) -->
+      <div class="card" id="reportCard">
+        <h2>Månedsrapport pr. kunde</h2>
 
-      <p class="muted" id="tableMsg"></p>
-    </div>
-
-    <!-- Edit -->
-    <div id="editCard" class="card hidden">
-      <h2 style="margin-top:0;">Ret job <span id="editId" class="mono"></span></h2>
-
-      <div class="grid">
-        <div>
-          <label>Faktura nummer</label>
-          <input id="editInvoiceNo" />
-        </div>
-        <div>
-          <label>Dato</label>
-          <input id="editJobDate" type="date" />
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <label>Måned</label>
+            <select id="reportMonth"></select>
+          </div>
+          <div>
+            <label>Kunde</label>
+            <select id="reportClient"></select>
+          </div>
         </div>
 
-        <div>
-          <label>Kategori</label>
-          <select id="editCategorySelect"></select>
-        </div>
-        <div>
-          <label>Kunde</label>
-          <input id="editClient" />
+        <div class="row" style="margin-top:12px;">
+          <button id="reportRefreshBtn" type="button" class="secondary">Opdater rapport</button>
+          <button id="reportExportBtn" type="button">Eksport rapport CSV</button>
         </div>
 
-        <div>
-          <label>Tid brugt (tekst)</label>
-          <input id="editWorkText" />
-        </div>
-        <div>
-          <label>Transport total (min)</label>
-          <input id="editTravelMinutes" type="number" min="0" step="1" />
-        </div>
+        <table style="margin-top:12px;">
+          <thead>
+            <tr>
+              <th>Måned</th>
+              <th>Kunde</th>
+              <th>Jobs</th>
+              <th>Arbejdstid</th>
+              <th>Transport</th>
+              <th>Fakturering ex. moms</th>
+            </tr>
+          </thead>
+          <tbody id="reportTbody"></tbody>
+        </table>
 
-        <div>
-          <label>Beløb ex. moms</label>
-          <input id="editInvoiceExVat" type="number" min="0" step="0.01" />
-          <div class="small muted" id="editInvoiceInclPreview" style="margin-top:6px;"></div>
-        </div>
-        <div>
-          <label>Noter</label>
-          <input id="editNotes" />
-        </div>
+        <p class="muted" id="reportMsg"></p>
       </div>
 
-      <div class="row" style="margin-top:12px;">
-        <button id="saveEditBtn">Gem rettelse</button>
-        <button id="cancelEditBtn" class="secondary">Annuller</button>
-        <button id="deleteJobBtn" class="danger">Slet job</button>
+      <!-- Jobs table -->
+      <div class="card">
+        <div class="row" style="align-items:flex-end;">
+          <div>
+            <label>Søg (kunde, kategori, id, faktura nr.)</label>
+            <input id="search" placeholder="fx seven / 2500 / klub" />
+          </div>
+
+          <div>
+            <label>År (filter)</label>
+            <select id="yearFilter">
+              <option value="">Alle</option>
+            </select>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:flex-end; flex:0 0 auto;">
+            <button id="refreshBtn" type="button" class="secondary">Opdater</button>
+            <button id="exportBtn" type="button">Eksport CSV</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Dato</th>
+              <th>Kunde</th>
+              <th>Kategori</th>
+              <th>Faktura nr</th>
+              <th>Tid</th>
+              <th>Transport</th>
+              <th>Beløb ex. moms</th>
+              <th>Handling</th>
+            </tr>
+          </thead>
+          <tbody id="jobsTbody"></tbody>
+        </table>
+
+        <p class="muted" id="tableMsg"></p>
       </div>
 
-      <p id="editMsg" class="muted"></p>
-    </div>
-  </div>
+      <!-- Edit -->
+      <div id="editCard" class="card hidden">
+        <h2>Ret job <span id="editId" class="mono"></span></h2>
+
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <label>Faktura nummer</label>
+            <input id="editInvoiceNo" />
+          </div>
+          <div>
+            <label>Dato</label>
+            <input id="editJobDate" type="date" />
+          </div>
+
+          <div>
+            <label>Kategori</label>
+            <select id="editCategorySelect"></select>
+          </div>
+          <div>
+            <label>Kunde</label>
+            <input id="editClient" />
+          </div>
+
+          <div>
+            <label>Tid brugt (tekst)</label>
+            <input id="editWorkText" />
+          </div>
+          <div>
+            <label>Transport total (min)</label>
+            <input id="editTravelMinutes" type="number" min="0" step="1" />
+          </div>
+
+          <div>
+            <label>Beløb ex. moms</label>
+            <input id="editInvoiceExVat" type="number" min="0" step="0.01" />
+            <div class="small muted" id="editInvoiceInclPreview" style="margin-top:6px;"></div>
+          </div>
+          <div>
+            <label>Noter</label>
+            <input id="editNotes" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="saveEditBtn" type="button">Gem rettelse</button>
+          <button id="cancelEditBtn" type="button" class="secondary">Annuller</button>
+          <button id="deleteJobBtn" type="button" class="danger">Slet job</button>
+        </div>
+
+        <p id="editMsg" class="muted"></p>
+      </div>
+
+    </div><!-- /#app -->
+
+  </div><!-- /.wrap -->
 
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -545,7 +711,7 @@
               <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
             </td>
             <td>
-              <button class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button>
+              <button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button>
             </td>
           </tr>
         `;
@@ -730,7 +896,7 @@
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
-        await loadReportRows(); // 👈 report auto-load
+        await loadReportRows();
       }
     }
 
@@ -748,7 +914,7 @@
       await loadCategories();
       await ensureDefaultCategories();
       await loadJobs();
-      await loadReportRows(); // 👈 report auto-load
+      await loadReportRows();
     });
 
     $("signupBtn").addEventListener("click", async () => {
@@ -820,7 +986,7 @@
       $("jobMsg").textContent = "Job gemt ✅ (ID er genereret automatisk)";
       resetJobForm();
       await loadJobs();
-      await loadReportRows(); // 👈 update report
+      await loadReportRows();
     });
 
     function resetJobForm(){
@@ -889,7 +1055,7 @@
 
       $("editMsg").textContent = "Rettet ✅";
       await loadJobs();
-      await loadReportRows(); // 👈 update report
+      await loadReportRows();
       $("editCard").classList.add("hidden");
       editingId = null;
     });
@@ -902,7 +1068,7 @@
       if (error) { $("editMsg").textContent = error.message; return; }
 
       await loadJobs();
-      await loadReportRows(); // 👈 update report
+      await loadReportRows();
       $("editCard").classList.add("hidden");
       editingId = null;
     });
@@ -938,7 +1104,7 @@
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
-        await loadReportRows(); // 👈 report auto-load
+        await loadReportRows();
       }
     });
   </script>
