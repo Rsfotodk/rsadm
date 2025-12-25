@@ -36,10 +36,19 @@
     @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .totals { grid-template-columns: 1fr; } .topbar { flex-direction: column; } }
     .topbar .right a { text-decoration: none; }
 
+    body { margin: 0; }
+
+.wrap { 
+  max-width: 1200px; 
+  margin: 24px auto; 
+  padding: 0 24px; 
+}
+
   </style>
 </head>
 <body>
-  <div class="topbar">
+  <div class="wrap">
+    <div class="topbar">
     <div>
       <h1>RSADM – Job & Faktura Overblik</h1>
       <p class="muted">Login → opret jobs → ret jobs → statistik pr. kategori og måned.</p>
