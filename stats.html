@@ -17,11 +17,14 @@
       --btn2:#eee;
       --btn2Text:#111;
       --shadow: 0 6px 18px rgba(0,0,0,.06);
+      --pill:#f2f2f2;
+      --pillPlan:#fff3cd;
     }
     *{ box-sizing:border-box; }
     body{ font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin:0; background:#fff; color:#111; }
     .wrap{ max-width: var(--maxw); margin: 24px auto; padding: 0 var(--pad); }
     h1{ margin:0 0 6px; }
+    h2{ margin:0; }
     .muted{ color: var(--muted); margin: 6px 0 0; }
     .small{ font-size:12px; color: var(--muted2); }
     .hidden{ display:none !important; }
@@ -43,6 +46,7 @@
     table{ width:100%; border-collapse:collapse; margin-top:12px; }
     th, td{ border-bottom:1px solid #eee; padding:8px; font-size:13px; text-align:left; vertical-align:top; }
     th{ text-transform:uppercase; font-size:12px; color: var(--muted2); letter-spacing:.04em; }
+
     .stat{ border:1px solid #eee; border-radius:14px; padding:12px; }
     .stat .k{ font-size:12px; color: var(--muted2); }
     .stat .v{ font-size:20px; font-weight:700; }
@@ -53,6 +57,16 @@
       background: var(--btn2); color: var(--btn2Text);
       border:1px solid #ccc; text-decoration:none; font-size:14px; line-height:1;
     }
+
+    .pill{
+      display:inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--pill);
+      font-size: 12px;
+      border: 1px solid #e6e6e6;
+    }
+    .pill.plan{ background: var(--pillPlan); }
 
     @media (max-width: 900px){
       .grid{ grid-template-columns: 1fr; }
@@ -77,18 +91,26 @@
       </div>
     </div>
 
-    <!-- Skjul alt indhold indtil login er bekræftet -->
     <div id="statsApp" class="hidden">
 
-      <!-- KPI -->
       <div class="card">
-        <h2 style="margin:0;">Overblik</h2>
+        <h2>Overblik (udført +)</h2>
         <div class="grid" id="kpis" style="margin-top:12px;"></div>
+        <p class="small muted" style="margin-top:10px;">KPI’er ignorerer Planlagt/Annulleret.</p>
       </div>
 
-      <!-- Jobs pr kategori -->
       <div class="card">
-        <h2 style="margin:0;">Jobs pr. kategori</h2>
+        <h2>Kommende planlagte jobs</h2>
+        <table>
+          <thead>
+            <tr><th>Dato</th><th>Kunde</th><th>Kategori</th><th>Status</th></tr>
+          </thead>
+          <tbody id="plannedRows"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Jobs pr. kategori (udført +)</h2>
         <table>
           <thead>
             <tr><th>Kategori</th><th>Jobs</th><th>Timer</th></tr>
@@ -97,9 +119,8 @@
         </table>
       </div>
 
-      <!-- Timer pr måned -->
       <div class="card">
-        <h2 style="margin:0;">Timer pr. måned</h2>
+        <h2>Timer pr. måned (udført +)</h2>
         <table>
           <thead>
             <tr><th>Måned</th><th>Timer</th></tr>
@@ -108,9 +129,8 @@
         </table>
       </div>
 
-      <!-- Månedsrapport pr kunde -->
       <div class="card">
-        <h2 style="margin:0;">Månedsrapport pr. kunde</h2>
+        <h2>Månedsrapport pr. kunde</h2>
 
         <div class="grid" style="margin-top:12px;">
           <div>
@@ -152,10 +172,15 @@
 
     const SUPABASE_URL = "https://epzbdezmbyyduqjthdzt.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwemJkZXptYnl5ZHVxanRoZHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDU3MzAsImV4cCI6MjA4MjA4MTczMH0.d_-8frGdHnvBO6smGThEUI81KUWI39rp5VX65O_HauU";
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const $ = (id) => document.getElementById(id);
+
+    const escapeHtml = (s) =>
+      String(s ?? "").replace(/[&<>"']/g, (c)=>({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+
     const fmtH = (mins) => {
       const m = Math.max(0, Math.round(Number(mins)||0));
       const h = Math.floor(m/60);
@@ -163,14 +188,25 @@
       return `${h}:${String(r).padStart(2,'0')}`;
     };
 
-    let user = null;
-
-    function showApp(){
-      $("statsApp").classList.remove("hidden");
-      $("whoami").textContent = user?.email ? `Logget ind: ${user.email}` : "";
+    function todayISO(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const da = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${da}`;
     }
 
-    // --- LOGIN GUARD ---
+    function ymFromDate(d){
+      const s = String(d ?? "");
+      const y = s.slice(0,4);
+      const m = s.slice(5,7);
+      return (y && m) ? `${y}-${m}` : "";
+    }
+
+    let user = null;
+    let reportRows = [];
+    let jobsRows = [];
+
     async function requireLogin(){
       const { data, error } = await supabase.auth.getSession();
       user = data?.session?.user ?? null;
@@ -182,77 +218,40 @@
       return true;
     }
 
+    function showApp(){
+      $("statsApp").classList.remove("hidden");
+      $("whoami").textContent = user?.email ? `Logget ind: ${user.email}` : "";
+    }
+
     $("logoutBtn").addEventListener("click", async () => {
       await supabase.auth.signOut();
       window.location.replace("index.html");
     });
 
-    // Hvis user logger ud i en anden fane → smid tilbage
     supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) window.location.replace("index.html");
     });
 
-    // --- DATA / RENDER ---
     function renderDropdowns(rows){
       const months = Array.from(new Set(rows.map(r => r.ym))).sort((a,b)=>b.localeCompare(a));
       const clients = Array.from(new Set(rows.map(r => r.client))).sort((a,b)=>a.localeCompare(b));
 
-      $("monthFilter").innerHTML = `<option value="">Alle</option>` + months.map(m=>`<option value="${m}">${m}</option>`).join("");
-      $("clientFilter").innerHTML = `<option value="">Alle</option>` + clients.map(c=>`<option value="${c}">${c}</option>`).join("");
+      $("monthFilter").innerHTML = `<option value="">Alle</option>` + months.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+      $("clientFilter").innerHTML = `<option value="">Alle</option>` + clients.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
     }
 
-    function filtered(rows){
+    function filteredReport(rows){
       const m = $("monthFilter").value;
       const c = $("clientFilter").value;
       return rows.filter(r => (!m || r.ym === m) && (!c || r.client === c));
     }
 
-    function renderKPIs(rows){
-      const totalJobs = rows.reduce((a,r)=>a+Number(r.jobs||0),0);
-      const workMin = rows.reduce((a,r)=>a+Number(r.work_minutes||0),0);
-      const travelMin = rows.reduce((a,r)=>a+Number(r.travel_minutes||0),0);
-      const invoiceEx = rows.reduce((a,r)=>a+Number(r.invoice_ex_vat||0),0);
-
-      $("kpis").innerHTML = `
-        <div class="stat"><div class="k">Jobs</div><div class="v">${totalJobs}</div></div>
-        <div class="stat"><div class="k">Arbejdstid</div><div class="v">${fmtH(workMin)}</div></div>
-        <div class="stat"><div class="k">Transport</div><div class="v">${fmtH(travelMin)}</div></div>
-        <div class="stat"><div class="k">Fakturering ex. moms</div><div class="v">${invoiceEx.toFixed(2)}</div></div>
-      `;
-    }
-
-    function renderByCategory(rows){
-      // Summer pr kategori på baggrund af rows (som er pr. måned/pr. kunde)
-      const map = new Map();
-      for (const r of rows) {
-        // Hvis din view ikke har kategori, så viser vi bare "—"
-        // (din nuværende view ser ud til at være monthly+client, ikke kategori)
-      }
-      // Din gamle stats.html har en byCategory-tabel, men view’et du bruger er monthly_client_report.
-      // Hvis du har en anden view til kategori-statistik, sig til, så kobler jeg den på.
-      $("byCategory").innerHTML = `<tr><td colspan="3" class="muted">Kræver et kategori-view (fx v_jobs_by_category). Skriv hvis du har det.</td></tr>`;
-    }
-
-    function renderByMonth(rows){
-      const monthMap = new Map();
-      for (const r of rows) {
-        const ym = r.ym;
-        monthMap.set(ym, (monthMap.get(ym)||0) + Number(r.work_minutes||0));
-      }
-      const out = Array.from(monthMap.entries())
-        .sort((a,b)=> b[0].localeCompare(a[0]))
-        .map(([ym, mins]) => `<tr><td>${ym}</td><td>${fmtH(mins)}</td></tr>`)
-        .join("");
-      $("byMonth").innerHTML = out || `<tr><td colspan="2" class="muted">Ingen data</td></tr>`;
-    }
-
     function renderReport(rows){
-      const r = filtered(rows);
-
+      const r = filteredReport(rows);
       $("reportBody").innerHTML = r.map(x => `
         <tr>
-          <td>${x.ym}</td>
-          <td>${x.client}</td>
+          <td>${escapeHtml(x.ym)}</td>
+          <td>${escapeHtml(x.client)}</td>
           <td>${Number(x.jobs||0)}</td>
           <td>${fmtH(x.work_minutes||0)}</td>
           <td>${fmtH(x.travel_minutes||0)}</td>
@@ -261,7 +260,7 @@
       `).join("") || `<tr><td colspan="6" class="muted">Ingen data for filter</td></tr>`;
     }
 
-    function exportCSV(rows){
+    function exportReportCSV(rows){
       const header = ["Måned","Kunde","Jobs","Arbejdstid","Transport","Fakturering ex moms"];
       const lines = [header.join(",")];
 
@@ -290,36 +289,122 @@
       a.remove();
     }
 
+    function renderKPIsFromJobs(allJobs){
+      const counted = allJobs.filter(j => ["completed","invoiced","paid"].includes(j.status));
+      const totalJobs = counted.length;
+      const workMin = counted.reduce((a,j)=>a+Number(j.work_minutes||0),0);
+      const travelMin = counted.reduce((a,j)=>a+Number(j.travel_minutes||0),0);
+      const invoiceEx = counted.reduce((a,j)=>a+Number(j.invoice_amount_ex_vat||0),0);
+
+      $("kpis").innerHTML = `
+        <div class="stat"><div class="k">Jobs</div><div class="v">${totalJobs}</div></div>
+        <div class="stat"><div class="k">Arbejdstid</div><div class="v">${fmtH(workMin)}</div></div>
+        <div class="stat"><div class="k">Transport</div><div class="v">${fmtH(travelMin)}</div></div>
+        <div class="stat"><div class="k">Fakturering ex. moms</div><div class="v">${invoiceEx.toFixed(2)}</div></div>
+      `;
+    }
+
+    function renderByCategoryFromJobs(allJobs){
+      const counted = allJobs.filter(j => ["completed","invoiced","paid"].includes(j.status));
+
+      const map = new Map();
+      for (const j of counted) {
+        const name = j.categories?.name ?? "(Ingen)";
+        const cur = map.get(name) || { count: 0, minutes: 0 };
+        cur.count += 1;
+        cur.minutes += Number(j.work_minutes||0);
+        map.set(name, cur);
+      }
+
+      const out = Array.from(map.entries())
+        .sort((a,b) => (b[1].count - a[1].count) || a[0].localeCompare(b[0]))
+        .map(([name, v]) => `
+          <tr>
+            <td>${escapeHtml(name)}</td>
+            <td>${v.count}</td>
+            <td>${fmtH(v.minutes)}</td>
+          </tr>
+        `).join("");
+
+      $("byCategory").innerHTML = out || `<tr><td colspan="3" class="muted">Ingen data</td></tr>`;
+    }
+
+    function renderByMonthFromJobs(allJobs){
+      const counted = allJobs.filter(j => ["completed","invoiced","paid"].includes(j.status));
+
+      const monthMap = new Map();
+      for (const j of counted) {
+        const ym = ymFromDate(j.job_date);
+        if (!ym) continue;
+        monthMap.set(ym, (monthMap.get(ym)||0) + Number(j.work_minutes||0));
+      }
+
+      const out = Array.from(monthMap.entries())
+        .sort((a,b)=> b[0].localeCompare(a[0]))
+        .map(([ym, mins]) => `<tr><td>${escapeHtml(ym)}</td><td>${fmtH(mins)}</td></tr>`)
+        .join("");
+
+      $("byMonth").innerHTML = out || `<tr><td colspan="2" class="muted">Ingen data</td></tr>`;
+    }
+
+    function renderPlanned(allJobs){
+      const today = todayISO();
+      const planned = allJobs
+        .filter(j => j.status === "planned" && String(j.job_date||"") >= today)
+        .sort((a,b)=> String(a.job_date||"").localeCompare(String(b.job_date||"")))
+        .slice(0, 30);
+
+      $("plannedRows").innerHTML = planned.map(j => `
+        <tr>
+          <td>${escapeHtml(j.job_date)}</td>
+          <td>${escapeHtml(j.client || "")}</td>
+          <td>${escapeHtml(j.categories?.name ?? "(Ingen)")}</td>
+          <td><span class="pill plan">Planlagt</span></td>
+        </tr>
+      `).join("") || `<tr><td colspan="4" class="muted">Ingen kommende planlagte jobs</td></tr>`;
+    }
+
     async function loadAll(){
       $("msg").textContent = "Henter statistik…";
 
-      const { data, error } = await supabase
+      const jobsQ = supabase
+        .from("jobs")
+        .select("job_date,status,work_minutes,travel_minutes,invoice_amount_ex_vat,categories(name)")
+        .eq("user_id", user.id);
+
+      const reportQ = supabase
         .from("v_monthly_client_report")
         .select("ym,client,jobs,work_minutes,travel_minutes,invoice_ex_vat")
         .eq("user_id", user.id)
         .order("ym", { ascending:false })
         .order("client", { ascending:true });
 
-      if (error) {
-        $("msg").textContent = error.message;
-        return;
-      }
+      const [
+        { data: jobsData, error: jobsError },
+        { data: reportData, error: reportError }
+      ] = await Promise.all([jobsQ, reportQ]);
 
-      const rows = data ?? [];
+      if (jobsError) { $("msg").textContent = jobsError.message; return; }
+      if (reportError) { $("msg").textContent = reportError.message; return; }
+
+      jobsRows = jobsData ?? [];
+      reportRows = reportData ?? [];
 
       $("msg").textContent = "";
-      renderKPIs(rows);
-      renderDropdowns(rows);
-      renderReport(rows);
-      renderByMonth(rows);
-      renderByCategory(rows);
 
-      $("monthFilter").onchange = () => renderReport(rows);
-      $("clientFilter").onchange = () => renderReport(rows);
-      $("exportBtn").onclick = () => exportCSV(filtered(rows));
+      renderKPIsFromJobs(jobsRows);
+      renderPlanned(jobsRows);
+      renderByCategoryFromJobs(jobsRows);
+      renderByMonthFromJobs(jobsRows);
+
+      renderDropdowns(reportRows);
+      renderReport(reportRows);
+
+      $("monthFilter").onchange = () => renderReport(reportRows);
+      $("clientFilter").onchange = () => renderReport(reportRows);
+      $("exportBtn").onclick = () => exportReportCSV(filteredReport(reportRows));
     }
 
-    // --- INIT ---
     if (await requireLogin()) {
       showApp();
       await loadAll();

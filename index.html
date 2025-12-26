@@ -19,6 +19,12 @@
       --btn2Text:#111;
       --danger:#b00020;
       --shadow: 0 6px 18px rgba(0,0,0,.06);
+      --pill:#f2f2f2;
+      --pillPlan:#fff3cd;
+      --pillDone:#d1ecf1;
+      --pillInv:#d4edda;
+      --pillPaid:#d4edda;
+      --pillCan:#f8d7da;
     }
 
     *{ box-sizing: border-box; }
@@ -150,9 +156,15 @@
       display:inline-block;
       padding: 4px 10px;
       border-radius: 999px;
-      background:#f2f2f2;
+      background: var(--pill);
       font-size: 12px;
+      border: 1px solid #e6e6e6;
     }
+    .pill.plan{ background: var(--pillPlan); }
+    .pill.done{ background: var(--pillDone); }
+    .pill.inv{ background: var(--pillInv); }
+    .pill.paid{ background: var(--pillPaid); }
+    .pill.can{ background: var(--pillCan); }
 
     .totals{
       display:grid;
@@ -173,7 +185,6 @@
 
     .hidden{ display:none !important; }
 
-    /* Gør link-knap pæn uden at wrappe button i <a> */
     .linkbtn{
       display:inline-flex;
       align-items:center;
@@ -203,16 +214,15 @@
     <div class="topbar">
       <div>
         <h1>RSADM – Job & Faktura Overblik</h1>
-        <p class="muted">Login → opret jobs → ret jobs → statistik pr. kategori og måned.</p>
+        <p class="muted">Login → planlæg jobs → udfør → fakturér → betalt.</p>
       </div>
 
       <div class="right">
-        <a class="linkbtn" href="stats.html">📊 Statistik</a>
+        <a class="linkbtn hidden" href="stats.html" id="statsLink">📊 Statistik</a>
         <div id="whoami" class="small"></div>
         <button id="logoutBtn" type="button" class="secondary hidden">Log ud</button>
       </div>
     </div>
-    <!-- ✅ VIGTIGT: topbar er nu korrekt lukket -->
 
     <!-- LOGIN -->
     <div id="loginCard" class="card">
@@ -257,6 +267,27 @@
         <p class="muted" id="catMsg"></p>
       </div>
 
+      <!-- Planned jobs (quick list) -->
+      <div class="card">
+        <h2>Kommende planlagte jobs</h2>
+        <p class="small muted" style="margin-top:6px;">Tip: Opret “Planlagt” nu – udfyld tid/transport/beløb senere.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Dato</th>
+              <th>Kunde</th>
+              <th>Kategori</th>
+              <th>Status</th>
+              <th>Handling</th>
+            </tr>
+          </thead>
+          <tbody id="plannedTbody"></tbody>
+        </table>
+
+        <p class="muted" id="plannedMsg"></p>
+      </div>
+
       <!-- New job -->
       <div class="card">
         <h2>Nyt job</h2>
@@ -272,18 +303,32 @@
           </div>
 
           <div>
+            <label>Status</label>
+            <select id="statusSelect">
+              <option value="planned">Planlagt</option>
+              <option value="completed">Udført</option>
+              <option value="invoiced">Faktureret</option>
+              <option value="paid">Betalt</option>
+              <option value="canceled">Annulleret</option>
+            </select>
+            <div class="small muted" id="statusHint" style="margin-top:6px;"></div>
+          </div>
+
+          <div>
             <label>Kategori</label>
             <select id="categorySelect"></select>
           </div>
+
           <div>
             <label>Kunde</label>
-            <input id="client" placeholder="fx Seven Racing / AC Horsens" />
+            <input id="client" placeholder="fx Seven Racing / AC Horsens / Natklub" />
           </div>
 
           <div>
             <label>Tid brugt (skriv i minutter / 1:30 / 2t 15m)</label>
             <input id="workText" placeholder="fx 2:15" />
           </div>
+
           <div>
             <label>Transport total (minutter)</label>
             <input id="travelMinutes" type="number" min="0" step="1" placeholder="fx 90" />
@@ -294,6 +339,7 @@
             <input id="invoiceExVat" type="number" min="0" step="0.01" placeholder="fx 2000.00" />
             <div class="small muted" id="invoiceInclPreview" style="margin-top:6px;"></div>
           </div>
+
           <div>
             <label>Noter</label>
             <input id="notes" placeholder="fx levering / særlige aftaler" />
@@ -308,18 +354,17 @@
         <p id="jobMsg" class="muted"></p>
       </div>
 
-      <!-- Stats -->
+      <!-- Stats (quick) -->
       <div class="card">
         <h2>Overblik</h2>
-
         <div class="totals" id="totals"></div>
 
         <div class="grid" style="margin-top:12px;">
           <div>
-            <h3 style="margin:0 0 8px;">Jobs pr. kategori</h3>
+            <h3 style="margin:0 0 8px;">Jobs pr. status</h3>
             <table>
-              <thead><tr><th>Kategori</th><th>Antal</th><th>Timer</th></tr></thead>
-              <tbody id="byCategory"></tbody>
+              <thead><tr><th>Status</th><th>Antal</th></tr></thead>
+              <tbody id="byStatus"></tbody>
             </table>
           </div>
 
@@ -380,8 +425,18 @@
 
           <div>
             <label>År (filter)</label>
-            <select id="yearFilter">
+            <select id="yearFilter"><option value="">Alle</option></select>
+          </div>
+
+          <div>
+            <label>Status (filter)</label>
+            <select id="statusFilter">
               <option value="">Alle</option>
+              <option value="planned">Planlagt</option>
+              <option value="completed">Udført</option>
+              <option value="invoiced">Faktureret</option>
+              <option value="paid">Betalt</option>
+              <option value="canceled">Annulleret</option>
             </select>
           </div>
 
@@ -395,6 +450,7 @@
           <thead>
             <tr>
               <th>ID</th>
+              <th>Status</th>
               <th>Dato</th>
               <th>Kunde</th>
               <th>Kategori</th>
@@ -417,9 +473,22 @@
 
         <div class="grid" style="margin-top:12px;">
           <div>
+            <label>Status</label>
+            <select id="editStatusSelect">
+              <option value="planned">Planlagt</option>
+              <option value="completed">Udført</option>
+              <option value="invoiced">Faktureret</option>
+              <option value="paid">Betalt</option>
+              <option value="canceled">Annulleret</option>
+            </select>
+            <div class="small muted" id="editStatusHint" style="margin-top:6px;"></div>
+          </div>
+
+          <div>
             <label>Faktura nummer</label>
             <input id="editInvoiceNo" />
           </div>
+
           <div>
             <label>Dato</label>
             <input id="editJobDate" type="date" />
@@ -429,6 +498,7 @@
             <label>Kategori</label>
             <select id="editCategorySelect"></select>
           </div>
+
           <div>
             <label>Kunde</label>
             <input id="editClient" />
@@ -438,6 +508,7 @@
             <label>Tid brugt (tekst)</label>
             <input id="editWorkText" />
           </div>
+
           <div>
             <label>Transport total (min)</label>
             <input id="editTravelMinutes" type="number" min="0" step="1" />
@@ -448,6 +519,7 @@
             <input id="editInvoiceExVat" type="number" min="0" step="0.01" />
             <div class="small muted" id="editInvoiceInclPreview" style="margin-top:6px;"></div>
           </div>
+
           <div>
             <label>Noter</label>
             <input id="editNotes" />
@@ -472,7 +544,6 @@
 
     const SUPABASE_URL = "https://epzbdezmbyyduqjthdzt.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwemJkZXptYnl5ZHVxanRoZHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDU3MzAsImV4cCI6MjA4MjA4MTczMH0.d_-8frGdHnvBO6smGThEUI81KUWI39rp5VX65O_HauU";
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const $ = (id) => document.getElementById(id);
@@ -520,19 +591,70 @@
       return total;
     }
 
+    function statusLabel(s){
+      return ({
+        planned:"Planlagt",
+        completed:"Udført",
+        invoiced:"Faktureret",
+        paid:"Betalt",
+        canceled:"Annulleret"
+      }[s] || s || "—");
+    }
+
+    function statusPillClass(s){
+      return ({
+        planned:"plan",
+        completed:"done",
+        invoiced:"inv",
+        paid:"paid",
+        canceled:"can"
+      }[s] || "");
+    }
+
+    function shouldDisableMoneyFields(status){
+      return status === "planned" || status === "canceled";
+    }
+
+    function autoStatusFromFields({ chosenStatus, work_minutes, invoice_no, invoice_amount_ex_vat, forcePaid }){
+      if (chosenStatus === "canceled") return "canceled";
+      if (chosenStatus === "paid" || forcePaid) return "paid";
+
+      const hasWork = Number(work_minutes || 0) > 0;
+      const hasInvoice = !!String(invoice_no || "").trim() || (invoice_amount_ex_vat !== null && invoice_amount_ex_vat !== undefined);
+
+      // Hvis bruger vælger "planned" manuelt, respekter - men kun hvis der ikke er data der modsiger
+      if (chosenStatus === "planned" && !hasWork && !hasInvoice) return "planned";
+
+      if (hasInvoice) return "invoiced";
+      if (hasWork) return "completed";
+      return "planned";
+    }
+
+    function stampsForStatus(nextStatus){
+      const now = new Date().toISOString();
+      return {
+        completed_at: (nextStatus === "completed" || nextStatus === "invoiced" || nextStatus === "paid") ? now : null,
+        invoiced_at: (nextStatus === "invoiced" || nextStatus === "paid") ? now : null,
+        paid_at: (nextStatus === "paid") ? now : null,
+        canceled_at: (nextStatus === "canceled") ? now : null,
+      };
+    }
+
     // State
     let user = null;
     let categories = [];
     let jobs = [];
     let editingId = null;
 
-    // --- REPORT STATE ---
+    // REPORT STATE
     let reportRows = [];
 
     function setLoggedInUI(isIn){
       $("loginCard").classList.toggle("hidden", isIn);
       $("app").classList.toggle("hidden", !isIn);
       $("logoutBtn").classList.toggle("hidden", !isIn);
+      $("statsLink").classList.toggle("hidden", !isIn);
+
       $("whoami").textContent = isIn ? `Logget ind: ${user?.email ?? ""}` : "";
     }
 
@@ -544,6 +666,36 @@
     function updateEditInvoicePreview(){
       const ex = $("editInvoiceExVat").value === "" ? null : Number($("editInvoiceExVat").value);
       $("editInvoiceInclPreview").textContent = ex === null ? "" : `= ${inclVat(ex).toFixed(2)} inkl. moms`;
+    }
+
+    function applyNewStatusUI(){
+      const s = $("statusSelect").value;
+      $("statusHint").textContent =
+        s === "planned" ? "Planlagt: du kan udfylde tid/transport/beløb senere." :
+        s === "canceled" ? "Annulleret: gemmes men tæller ikke med i statistik." :
+        "Tip: udfyld tid og beløb – status opdateres automatisk til Udført/Faktureret.";
+
+      const dis = shouldDisableMoneyFields(s);
+      $("workText").disabled = dis && s === "planned";
+      $("travelMinutes").disabled = dis && s === "planned";
+      $("invoiceExVat").disabled = dis;
+      $("invoiceNo").disabled = (s === "planned");
+
+      if (dis && s === "planned"){
+        // lad det være muligt at gemme planlagt uden alt muligt
+        // men vi rydder ikke felterne automatisk
+      }
+      updateNewInvoicePreview();
+    }
+
+    function applyEditStatusUI(){
+      const s = $("editStatusSelect").value;
+      $("editStatusHint").textContent =
+        s === "planned" ? "Planlagt: udfyld tid/beløb senere, så bliver den automatisk Udført/Faktureret." :
+        s === "paid" ? "Betalt: sætter paid_at (nu)." :
+        s === "canceled" ? "Annulleret: tæller ikke med i statistik." :
+        "";
+      updateEditInvoicePreview();
     }
 
     async function ensureDefaultCategories(){
@@ -582,8 +734,9 @@
       const { data, error } = await supabase
         .from("jobs")
         .select(`
-          id, job_date, client, invoice_no, work_minutes, work_text, travel_minutes, invoice_amount_ex_vat, notes,
+          id, status, job_date, client, invoice_no, work_minutes, work_text, travel_minutes, invoice_amount_ex_vat, notes,
           category_id,
+          completed_at, invoiced_at, paid_at, canceled_at,
           categories(name)
         `)
         .order("job_date", { ascending: false })
@@ -593,6 +746,7 @@
         $("tableMsg").textContent = `Fejl ved hentning af jobs: ${error.message}`;
         jobs = [];
         renderAll();
+        renderPlannedList();
         return;
       }
 
@@ -603,6 +757,7 @@
 
       $("tableMsg").textContent = "";
       renderAll();
+      renderPlannedList();
     }
 
     function renderYearFilter(){
@@ -613,22 +768,15 @@
     }
 
     function computeStats(filtered){
-      const totalJobs = filtered.length;
-      const totalWorkMin = filtered.reduce((a,j)=>a+(Number(j.work_minutes)||0),0);
-      const totalTravelMin = filtered.reduce((a,j)=>a+(Number(j.travel_minutes)||0),0);
-      const totalInvoiceEx = filtered.reduce((a,j)=>a+(Number(j.invoice_amount_ex_vat)||0),0);
-
-      const catMap = new Map();
-      for (const j of filtered) {
-        const key = j.category_name || "(Ingen)";
-        const cur = catMap.get(key) || { count:0, minutes:0 };
-        cur.count += 1;
-        cur.minutes += Number(j.work_minutes)||0;
-        catMap.set(key, cur);
-      }
+      // kun "rigtige" jobs tæller i totals
+      const counted = filtered.filter(j => ["completed","invoiced","paid"].includes(j.status));
+      const totalJobs = counted.length;
+      const totalWorkMin = counted.reduce((a,j)=>a+(Number(j.work_minutes)||0),0);
+      const totalTravelMin = counted.reduce((a,j)=>a+(Number(j.travel_minutes)||0),0);
+      const totalInvoiceEx = counted.reduce((a,j)=>a+(Number(j.invoice_amount_ex_vat)||0),0);
 
       const monthMap = new Map();
-      for (const j of filtered) {
+      for (const j of counted) {
         const y = String(j.job_date||"").slice(0,4);
         const m = String(j.job_date||"").slice(5,7);
         if (!y || !m) continue;
@@ -636,7 +784,13 @@
         monthMap.set(key, (monthMap.get(key)||0) + (Number(j.work_minutes)||0));
       }
 
-      return { totalJobs, totalWorkMin, totalTravelMin, totalInvoiceEx, catMap, monthMap };
+      const statusMap = new Map();
+      for (const j of filtered) {
+        const s = j.status || "planned";
+        statusMap.set(s, (statusMap.get(s)||0) + 1);
+      }
+
+      return { totalJobs, totalWorkMin, totalTravelMin, totalInvoiceEx, monthMap, statusMap };
     }
 
     function renderStats(filtered){
@@ -644,9 +798,9 @@
       const totalInvoiceIncl = inclVat(s.totalInvoiceEx);
 
       $("totals").innerHTML = `
-        <div class="stat"><div class="k">Jobs i alt</div><div class="v">${s.totalJobs}</div></div>
-        <div class="stat"><div class="k">Arbejdstid i alt</div><div class="v">${fmtH(s.totalWorkMin)}</div></div>
-        <div class="stat"><div class="k">Transport i alt</div><div class="v">${fmtH(s.totalTravelMin)}</div></div>
+        <div class="stat"><div class="k">Jobs (udført+)</div><div class="v">${s.totalJobs}</div></div>
+        <div class="stat"><div class="k">Arbejdstid</div><div class="v">${fmtH(s.totalWorkMin)}</div></div>
+        <div class="stat"><div class="k">Transport</div><div class="v">${fmtH(s.totalTravelMin)}</div></div>
         <div class="stat">
           <div class="k">Fakturering ex. moms</div>
           <div class="v">${s.totalInvoiceEx.toFixed(2)}</div>
@@ -654,22 +808,16 @@
         </div>
       `;
 
-      const catRows = Array.from(s.catMap.entries())
-        .sort((a,b)=> (b[1].count - a[1].count) || a[0].localeCompare(b[0]))
-        .map(([name, v]) => `
-          <tr>
-            <td>${escapeHtml(name)}</td>
-            <td>${v.count}</td>
-            <td>${fmtH(v.minutes)}</td>
-          </tr>
-        `).join("");
-      $("byCategory").innerHTML = catRows || `<tr><td colspan="3" class="muted">Ingen data endnu</td></tr>`;
+      const stRows = ["planned","completed","invoiced","paid","canceled"].map(k => `
+        <tr><td>${escapeHtml(statusLabel(k))}</td><td>${Number(s.statusMap.get(k)||0)}</td></tr>
+      `).join("");
+      $("byStatus").innerHTML = stRows;
 
       const monthRows = Array.from(s.monthMap.entries())
         .sort((a,b)=> b[0].localeCompare(a[0]))
         .map(([ym, minutes]) => `
           <tr>
-            <td>${ym}</td>
+            <td>${escapeHtml(ym)}</td>
             <td>${fmtH(minutes)}</td>
           </tr>
         `).join("");
@@ -679,14 +827,17 @@
     function filterJobs(){
       const q = $("search").value.trim().toLowerCase();
       const y = $("yearFilter").value;
+      const sf = $("statusFilter").value;
 
       return jobs.filter(j => {
         if (y && String(j.job_date||"").slice(0,4) !== y) return false;
+        if (sf && String(j.status||"") !== sf) return false;
         if (!q) return true;
 
         const hay = [
           j.id, j.client, j.invoice_no, j.category_name,
-          String(j.invoice_amount_ex_vat ?? "")
+          String(j.invoice_amount_ex_vat ?? ""),
+          j.status
         ].join(" ").toLowerCase();
 
         return hay.includes(q);
@@ -697,9 +848,13 @@
       $("jobsTbody").innerHTML = filtered.map(j => {
         const ex = Number(j.invoice_amount_ex_vat || 0);
         const incl = inclVat(ex);
+        const s = j.status || "planned";
         return `
           <tr>
             <td class="mono">${escapeHtml(j.id)}</td>
+            <td>
+              <span class="pill ${statusPillClass(s)}">${escapeHtml(statusLabel(s))}</span>
+            </td>
             <td>${escapeHtml(j.job_date)}</td>
             <td>${escapeHtml(j.client || "")}</td>
             <td><span class="pill">${escapeHtml(j.category_name || "(Ingen)")}</span></td>
@@ -707,8 +862,8 @@
             <td>${fmtH(j.work_minutes || 0)}</td>
             <td>${fmtH(j.travel_minutes || 0)}</td>
             <td>
-              ${ex.toFixed(2)}<br>
-              <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
+              ${ex ? ex.toFixed(2) : "—"}<br>
+              ${ex ? `<small class="muted">(${incl.toFixed(2)} inkl. moms)</small>` : `<small class="muted">—</small>`}
             </td>
             <td>
               <button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button>
@@ -722,6 +877,38 @@
       });
     }
 
+    function renderPlannedList(){
+      const today = todayISO();
+      const planned = jobs
+        .filter(j => (j.status === "planned") && String(j.job_date||"") >= today)
+        .sort((a,b)=> String(a.job_date||"").localeCompare(String(b.job_date||"")))
+        .slice(0, 25);
+
+      if (!planned.length){
+        $("plannedTbody").innerHTML = `<tr><td colspan="5" class="muted">Ingen kommende planlagte jobs</td></tr>`;
+        $("plannedMsg").textContent = "";
+        return;
+      }
+
+      $("plannedTbody").innerHTML = planned.map(j => `
+        <tr>
+          <td>${escapeHtml(j.job_date)}</td>
+          <td>${escapeHtml(j.client || "")}</td>
+          <td><span class="pill">${escapeHtml(j.category_name || "(Ingen)")}</span></td>
+          <td><span class="pill plan">Planlagt</span></td>
+          <td>
+            <button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Udfyld</button>
+          </td>
+        </tr>
+      `).join("");
+
+      document.querySelectorAll("#plannedTbody button[data-edit]").forEach(btn => {
+        btn.addEventListener("click", () => openEdit(btn.getAttribute("data-edit")));
+      });
+
+      $("plannedMsg").textContent = "Tip: klik “Udfyld” for at tilføje tid/beløb og få status til at opdatere automatisk.";
+    }
+
     function renderAll(){
       const filtered = filterJobs();
       renderYearFilter();
@@ -730,7 +917,7 @@
     }
 
     function exportCSV(filtered){
-      const header = ["JobID","Dato","Kunde","Kategori","FakturaNr","WorkMin","WorkText","TransportMin","BeløbExMoms","BeløbInclMoms","Noter"];
+      const header = ["JobID","Status","Dato","Kunde","Kategori","FakturaNr","WorkMin","WorkText","TransportMin","BeløbExMoms","BeløbInclMoms","Noter"];
       const lines = [header.join(",")];
 
       const esc = (s) => {
@@ -743,6 +930,7 @@
         const incl = inclVat(ex);
         lines.push([
           esc(j.id),
+          esc(j.status),
           esc(j.job_date),
           esc(j.client),
           esc(j.category_name),
@@ -750,8 +938,8 @@
           esc(j.work_minutes),
           esc(j.work_text),
           esc(j.travel_minutes),
-          esc(ex.toFixed(2)),
-          esc(incl.toFixed(2)),
+          esc(ex ? ex.toFixed(2) : ""),
+          esc(ex ? incl.toFixed(2) : ""),
           esc(j.notes),
         ].join(","));
       }
@@ -799,7 +987,6 @@
       setSelectOptions($("reportMonth"), months, "(Alle måneder)");
       setSelectOptions($("reportClient"), clients, "(Alle kunder)");
 
-      // Auto-vælg seneste måned første gang
       if (!$("reportMonth").dataset.initialized) {
         $("reportMonth").value = months[0] || "";
         $("reportMonth").dataset.initialized = "1";
@@ -893,6 +1080,9 @@
 
       if (user) {
         $("jobDate").value = todayISO();
+        $("statusSelect").value = "planned";
+        applyNewStatusUI();
+
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
@@ -910,7 +1100,11 @@
 
       user = data.user;
       setLoggedInUI(true);
+
       $("jobDate").value = todayISO();
+      $("statusSelect").value = "planned";
+      applyNewStatusUI();
+
       await loadCategories();
       await ensureDefaultCategories();
       await loadJobs();
@@ -960,6 +1154,9 @@
       const job_date = $("jobDate").value || todayISO();
       const category_id = $("categorySelect").value || null;
       const client = $("client").value.trim();
+      const chosenStatus = $("statusSelect").value;
+
+      if (!client) { $("jobMsg").textContent = "Skriv en kunde."; return; }
 
       const work_text = $("workText").value.trim();
       const work_minutes = parseWorkMinutes(work_text);
@@ -968,22 +1165,34 @@
       const invoice_amount_ex_vat = $("invoiceExVat").value === "" ? null : Number($("invoiceExVat").value);
       const notes = $("notes").value.trim() || null;
 
+      const nextStatus = autoStatusFromFields({
+        chosenStatus,
+        work_minutes,
+        invoice_no,
+        invoice_amount_ex_vat,
+        forcePaid: false
+      });
+
+      const stamps = stampsForStatus(nextStatus);
+
       const { error } = await supabase.from("jobs").insert({
         user_id: user.id,
-        invoice_no,
+        invoice_no: (nextStatus === "planned") ? "" : invoice_no,
         job_date,
         category_id,
         client,
-        work_minutes,
-        work_text,
-        travel_minutes,
-        invoice_amount_ex_vat,
-        notes
+        work_minutes: (nextStatus === "planned") ? 0 : work_minutes,
+        work_text: (nextStatus === "planned") ? "" : work_text,
+        travel_minutes: (nextStatus === "planned") ? 0 : travel_minutes,
+        invoice_amount_ex_vat: (nextStatus === "planned") ? null : invoice_amount_ex_vat,
+        notes,
+        status: nextStatus,
+        ...stamps
       });
 
       if (error) { $("jobMsg").textContent = error.message; return; }
 
-      $("jobMsg").textContent = "Job gemt ✅ (ID er genereret automatisk)";
+      $("jobMsg").textContent = "Job gemt ✅";
       resetJobForm();
       await loadJobs();
       await loadReportRows();
@@ -992,6 +1201,7 @@
     function resetJobForm(){
       $("invoiceNo").value = "";
       $("jobDate").value = todayISO();
+      $("statusSelect").value = "planned";
       $("categorySelect").value = "";
       $("client").value = "";
       $("workText").value = "";
@@ -999,6 +1209,7 @@
       $("invoiceExVat").value = "";
       $("invoiceInclPreview").textContent = "";
       $("notes").value = "";
+      applyNewStatusUI();
     }
 
     $("resetJobBtn").addEventListener("click", resetJobForm);
@@ -1012,6 +1223,7 @@
       $("editCard").classList.remove("hidden");
       $("editId").textContent = id;
 
+      $("editStatusSelect").value = j.status ?? "planned";
       $("editInvoiceNo").value = j.invoice_no ?? "";
       $("editJobDate").value = j.job_date ?? todayISO();
       $("editCategorySelect").value = j.category_id ?? "";
@@ -1021,7 +1233,7 @@
       $("editInvoiceExVat").value = j.invoice_amount_ex_vat ?? "";
       $("editNotes").value = j.notes ?? "";
 
-      updateEditInvoicePreview();
+      applyEditStatusUI();
       $("editMsg").textContent = "";
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }
@@ -1035,18 +1247,36 @@
       if (!editingId) return;
       $("editMsg").textContent = "";
 
+      const chosenStatus = $("editStatusSelect").value;
+
       const work_text = $("editWorkText").value.trim();
       const work_minutes = parseWorkMinutes(work_text);
 
+      const invoice_no = $("editInvoiceNo").value.trim();
+      const invoice_amount_ex_vat = $("editInvoiceExVat").value === "" ? null : Number($("editInvoiceExVat").value);
+
+      const nextStatus = autoStatusFromFields({
+        chosenStatus,
+        work_minutes,
+        invoice_no,
+        invoice_amount_ex_vat,
+        forcePaid: (chosenStatus === "paid")
+      });
+
+      const stamps = stampsForStatus(nextStatus);
+
       const patch = {
-        invoice_no: $("editInvoiceNo").value.trim(),
+        status: nextStatus,
+        ...stamps,
+
+        invoice_no: (nextStatus === "planned") ? "" : invoice_no,
         job_date: $("editJobDate").value || todayISO(),
         category_id: $("editCategorySelect").value || null,
         client: $("editClient").value.trim(),
-        work_text,
-        work_minutes,
-        travel_minutes: Math.max(0, Number($("editTravelMinutes").value || 0)),
-        invoice_amount_ex_vat: $("editInvoiceExVat").value === "" ? null : Number($("editInvoiceExVat").value),
+        work_text: (nextStatus === "planned") ? "" : work_text,
+        work_minutes: (nextStatus === "planned") ? 0 : work_minutes,
+        travel_minutes: (nextStatus === "planned") ? 0 : Math.max(0, Number($("editTravelMinutes").value || 0)),
+        invoice_amount_ex_vat: (nextStatus === "planned") ? null : invoice_amount_ex_vat,
         notes: $("editNotes").value.trim() || null
       };
 
@@ -1077,6 +1307,7 @@
     $("refreshBtn").addEventListener("click", async () => { await loadJobs(); await loadReportRows(); });
     $("search").addEventListener("input", renderAll);
     $("yearFilter").addEventListener("change", renderAll);
+    $("statusFilter").addEventListener("change", renderAll);
 
     $("exportBtn").addEventListener("click", () => {
       const filtered = filterJobs();
@@ -1089,9 +1320,11 @@
     $("reportMonth").addEventListener("change", renderReport);
     $("reportClient").addEventListener("change", renderReport);
 
-    // Invoice previews
+    // Invoice previews + status UI
     $("invoiceExVat").addEventListener("input", updateNewInvoicePreview);
     $("editInvoiceExVat").addEventListener("input", updateEditInvoicePreview);
+    $("statusSelect").addEventListener("change", applyNewStatusUI);
+    $("editStatusSelect").addEventListener("change", applyEditStatusUI);
 
     // Initial
     await checkSession();
@@ -1101,6 +1334,9 @@
       setLoggedInUI(!!user);
       if (user) {
         $("jobDate").value = todayISO();
+        $("statusSelect").value = "planned";
+        applyNewStatusUI();
+
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
