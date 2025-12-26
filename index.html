@@ -679,7 +679,7 @@
       $("workText").disabled = dis && s === "planned";
       $("travelMinutes").disabled = dis && s === "planned";
       $("invoiceExVat").disabled = dis;
-      $("invoiceNo").disabled = (s === "planned");
+      $("invoiceNo").disabled = false;
 
       if (dis && s === "planned"){
         // lad det være muligt at gemme planlagt uden alt muligt
