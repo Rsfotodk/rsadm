@@ -19,12 +19,6 @@
       --btn2Text:#111;
       --danger:#b00020;
       --shadow: 0 6px 18px rgba(0,0,0,.06);
-      --pill:#f2f2f2;
-      --pillPlan:#fff3cd;
-      --pillDone:#d1ecf1;
-      --pillInv:#d4edda;
-      --pillPaid:#d4edda;
-      --pillCan:#f8d7da;
     }
 
     *{ box-sizing: border-box; }
@@ -156,15 +150,9 @@
       display:inline-block;
       padding: 4px 10px;
       border-radius: 999px;
-      background: var(--pill);
+      background:#f2f2f2;
       font-size: 12px;
-      border: 1px solid #e6e6e6;
     }
-    .pill.plan{ background: var(--pillPlan); }
-    .pill.done{ background: var(--pillDone); }
-    .pill.inv{ background: var(--pillInv); }
-    .pill.paid{ background: var(--pillPaid); }
-    .pill.can{ background: var(--pillCan); }
 
     .totals{
       display:grid;
@@ -199,6 +187,21 @@
       line-height: 1;
     }
 
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      background:#fafafa;
+    }
+    .b-draft{ border-color:#ddd; }
+    .b-ready{ border-color:#9fd; background:#f2fffb; }
+    .b-invoiced{ border-color:#fd9; background:#fff9ee; }
+    .b-paid{ border-color:#9f9; background:#f2fff2; }
+
     @media (max-width: 900px){
       .grid{ grid-template-columns: 1fr; }
       .totals{ grid-template-columns: 1fr; }
@@ -214,11 +217,11 @@
     <div class="topbar">
       <div>
         <h1>RSADM – Job & Faktura Overblik</h1>
-        <p class="muted">Login → opret/ret jobs → status ændres manuelt.</p>
+        <p class="muted">Login → kunder → opret jobs → status → statistik.</p>
       </div>
 
       <div class="right">
-        <a class="linkbtn hidden" href="stats.html" id="statsLink">📊 Statistik</a>
+        <a class="linkbtn" href="stats.html">📊 Statistik</a>
         <div id="whoami" class="small"></div>
         <button id="logoutBtn" type="button" class="secondary hidden">Log ud</button>
       </div>
@@ -249,6 +252,36 @@
 
     <!-- APP -->
     <div id="app" class="hidden">
+
+      <!-- Clients -->
+      <div class="card">
+        <h2>Kunder</h2>
+        <p class="muted">Kunde-master (navn + timepris). Bruges til dropdown på jobs.</p>
+
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <label>Ny kunde (navn)</label>
+            <input id="newClientName" placeholder="fx Seven Racing / AC Horsens" />
+          </div>
+          <div>
+            <label>Timepris (kr. ex. moms)</label>
+            <input id="newClientRate" type="number" min="0" step="0.01" placeholder="fx 850.00" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="addClientBtn" type="button">Tilføj kunde</button>
+          <button id="refreshClientsBtn" type="button" class="secondary">Opdater liste</button>
+        </div>
+
+        <table>
+          <thead><tr><th>Kunde</th><th>Timepris</th><th>Handling</th></tr></thead>
+          <tbody id="clientsTbody"></tbody>
+        </table>
+
+        <p class="muted" id="clientMsg"></p>
+        <p class="small">Tip: Hvis sletning fejler, er kunden nok i brug af et job (FK). Så lav i stedet “arkivér” senere.</p>
+      </div>
 
       <!-- Categories -->
       <div class="card">
@@ -282,32 +315,34 @@
           </div>
 
           <div>
-            <label>Status (manuelt)</label>
-            <select id="statusSelect">
-              <option value="planned">Planlagt</option>
-              <option value="completed">Udført</option>
-              <option value="invoiced">Faktureret</option>
-              <option value="paid">Betalt</option>
-              <option value="canceled">Annulleret</option>
-            </select>
-            <div class="small muted" id="statusHint" style="margin-top:6px;"></div>
-          </div>
-
-          <div>
             <label>Kategori</label>
             <select id="categorySelect"></select>
           </div>
 
           <div>
-            <label>Kunde</label>
-            <input id="client" placeholder="fx Seven Racing / AC Horsens / Natklub" />
+            <label>Status</label>
+            <select id="statusSelect">
+              <option value="draft">draft</option>
+              <option value="ready">ready</option>
+              <option value="invoiced">invoiced</option>
+              <option value="paid">paid</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Kunde (vælg fra liste)</label>
+            <select id="clientSelect"></select>
+            <div class="small muted" id="clientRateHint" style="margin-top:6px;"></div>
+          </div>
+          <div id="clientManualWrap" class="hidden">
+            <label>Kunde (manuel)</label>
+            <input id="clientManual" placeholder="fx Seven Racing / AC Horsens" />
           </div>
 
           <div>
             <label>Tid brugt (skriv i minutter / 1:30 / 2t 15m)</label>
             <input id="workText" placeholder="fx 2:15" />
           </div>
-
           <div>
             <label>Transport total (minutter)</label>
             <input id="travelMinutes" type="number" min="0" step="1" placeholder="fx 90" />
@@ -317,6 +352,14 @@
             <label>Fakturér (beløb ex. moms)</label>
             <input id="invoiceExVat" type="number" min="0" step="0.01" placeholder="fx 2000.00" />
             <div class="small muted" id="invoiceInclPreview" style="margin-top:6px;"></div>
+
+            <div class="row" style="margin-top:10px; gap:10px;">
+              <label style="display:flex; align-items:center; gap:10px; margin:0;">
+                <input id="autoCalcAmount" type="checkbox" checked style="width:auto; transform: translateY(1px);" />
+                Beregn beløb automatisk (ud fra tid × timepris)
+              </label>
+            </div>
+            <div class="small muted" id="autoCalcHint" style="margin-top:6px;"></div>
           </div>
 
           <div>
@@ -333,29 +376,66 @@
         <p id="jobMsg" class="muted"></p>
       </div>
 
-      <!-- Quick stats -->
+      <!-- Stats -->
       <div class="card">
         <h2>Overblik</h2>
+
         <div class="totals" id="totals"></div>
 
         <div class="grid" style="margin-top:12px;">
           <div>
-            <h3 style="margin:0 0 8px;">Jobs pr. status</h3>
+            <h3 style="margin:0 0 8px;">Jobs pr. kategori</h3>
             <table>
-              <thead><tr><th>Status</th><th>Antal</th></tr></thead>
-              <tbody id="byStatus"></tbody>
+              <thead><tr><th>Kategori</th><th>Antal</th><th>Timer</th></tr></thead>
+              <tbody id="byCategory"></tbody>
             </table>
           </div>
 
           <div>
-            <h3 style="margin:0 0 8px;">Timer pr. måned (udført+)</h3>
+            <h3 style="margin:0 0 8px;">Timer pr. måned</h3>
             <table>
               <thead><tr><th>Måned</th><th>Timer</th></tr></thead>
               <tbody id="byMonth"></tbody>
             </table>
           </div>
         </div>
-        <p class="small muted" style="margin-top:10px;">Bemærk: “Timer pr. måned” tæller kun Udført/Faktureret/Betalt.</p>
+      </div>
+
+      <!-- Report (own card) -->
+      <div class="card" id="reportCard">
+        <h2>Månedsrapport pr. kunde</h2>
+
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <label>Måned</label>
+            <select id="reportMonth"></select>
+          </div>
+          <div>
+            <label>Kunde</label>
+            <select id="reportClient"></select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="reportRefreshBtn" type="button" class="secondary">Opdater rapport</button>
+          <button id="reportExportBtn" type="button">Eksport rapport CSV</button>
+        </div>
+
+        <table style="margin-top:12px;">
+          <thead>
+            <tr>
+              <th>Måned</th>
+              <th>Kunde</th>
+              <th>Jobs</th>
+              <th>Arbejdstid</th>
+              <th>Transport</th>
+              <th>Fakturering ex. moms</th>
+            </tr>
+          </thead>
+          <tbody id="reportTbody"></tbody>
+        </table>
+
+        <p class="muted" id="reportMsg"></p>
       </div>
 
       <!-- Jobs table -->
@@ -368,18 +448,19 @@
 
           <div>
             <label>År (filter)</label>
-            <select id="yearFilter"><option value="">Alle</option></select>
+            <select id="yearFilter">
+              <option value="">Alle</option>
+            </select>
           </div>
 
           <div>
             <label>Status (filter)</label>
             <select id="statusFilter">
               <option value="">Alle</option>
-              <option value="planned">Planlagt</option>
-              <option value="completed">Udført</option>
-              <option value="invoiced">Faktureret</option>
-              <option value="paid">Betalt</option>
-              <option value="canceled">Annulleret</option>
+              <option value="draft">draft</option>
+              <option value="ready">ready</option>
+              <option value="invoiced">invoiced</option>
+              <option value="paid">paid</option>
             </select>
           </div>
 
@@ -393,8 +474,8 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>Status</th>
               <th>Dato</th>
+              <th>Status</th>
               <th>Kunde</th>
               <th>Kategori</th>
               <th>Faktura nr</th>
@@ -416,22 +497,9 @@
 
         <div class="grid" style="margin-top:12px;">
           <div>
-            <label>Status (manuelt)</label>
-            <select id="editStatusSelect">
-              <option value="planned">Planlagt</option>
-              <option value="completed">Udført</option>
-              <option value="invoiced">Faktureret</option>
-              <option value="paid">Betalt</option>
-              <option value="canceled">Annulleret</option>
-            </select>
-            <div class="small muted" id="editStatusHint" style="margin-top:6px;"></div>
-          </div>
-
-          <div>
             <label>Faktura nummer</label>
             <input id="editInvoiceNo" />
           </div>
-
           <div>
             <label>Dato</label>
             <input id="editJobDate" type="date" />
@@ -443,15 +511,29 @@
           </div>
 
           <div>
-            <label>Kunde</label>
-            <input id="editClient" />
+            <label>Status</label>
+            <select id="editStatusSelect">
+              <option value="draft">draft</option>
+              <option value="ready">ready</option>
+              <option value="invoiced">invoiced</option>
+              <option value="paid">paid</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Kunde (vælg fra liste)</label>
+            <select id="editClientSelect"></select>
+            <div class="small muted" id="editClientRateHint" style="margin-top:6px;"></div>
+          </div>
+          <div id="editClientManualWrap" class="hidden">
+            <label>Kunde (manuel)</label>
+            <input id="editClientManual" />
           </div>
 
           <div>
             <label>Tid brugt (tekst)</label>
             <input id="editWorkText" />
           </div>
-
           <div>
             <label>Transport total (min)</label>
             <input id="editTravelMinutes" type="number" min="0" step="1" />
@@ -461,6 +543,12 @@
             <label>Beløb ex. moms</label>
             <input id="editInvoiceExVat" type="number" min="0" step="0.01" />
             <div class="small muted" id="editInvoiceInclPreview" style="margin-top:6px;"></div>
+
+            <label style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+              <input id="editAutoCalcAmount" type="checkbox" checked style="width:auto; transform: translateY(1px);" />
+              Beregn beløb automatisk
+            </label>
+            <div class="small muted" id="editAutoCalcHint" style="margin-top:6px;"></div>
           </div>
 
           <div>
@@ -487,8 +575,8 @@
 
     const SUPABASE_URL = "https://epzbdezmbyyduqjthdzt.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwemJkZXptYnl5ZHVxanRoZHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDU3MzAsImV4cCI6MjA4MjA4MTczMH0.d_-8frGdHnvBO6smGThEUI81KUWI39rp5VX65O_HauU";
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const $ = (id) => document.getElementById(id);
 
     const VAT_RATE = 0.25;
@@ -515,6 +603,7 @@
       }[c]));
     }
 
+    // Parse work text -> minutes
     function parseWorkMinutes(input){
       const s = String(input ?? "").trim().toLowerCase();
       if (!s) return 0;
@@ -533,24 +622,32 @@
       return total;
     }
 
-    function statusLabel(s){
-      return ({
-        planned:"Planlagt",
-        completed:"Udført",
-        invoiced:"Faktureret",
-        paid:"Betalt",
-        canceled:"Annulleret"
-      }[s] || s || "—");
+    function statusBadge(status){
+      const s = String(status || "draft");
+      const cls = s === "ready" ? "b-ready" : s === "invoiced" ? "b-invoiced" : s === "paid" ? "b-paid" : "b-draft";
+      return `<span class="badge ${cls}">${escapeHtml(s)}</span>`;
     }
 
-    function statusPillClass(s){
-      return ({
-        planned:"plan",
-        completed:"done",
-        invoiced:"inv",
-        paid:"paid",
-        canceled:"can"
-      }[s] || "");
+    function round2(n){
+      const x = Number(n || 0);
+      return Math.round(x * 100) / 100;
+    }
+
+    // State
+    let user = null;
+    let categories = [];
+    let clients = [];
+    let jobs = [];
+    let editingId = null;
+
+    // REPORT STATE
+    let reportRows = [];
+
+    function setLoggedInUI(isIn){
+      $("loginCard").classList.toggle("hidden", isIn);
+      $("app").classList.toggle("hidden", !isIn);
+      $("logoutBtn").classList.toggle("hidden", !isIn);
+      $("whoami").textContent = isIn ? `Logget ind: ${user?.email ?? ""}` : "";
     }
 
     function updateNewInvoicePreview(){
@@ -563,70 +660,81 @@
       $("editInvoiceInclPreview").textContent = ex === null ? "" : `= ${inclVat(ex).toFixed(2)} inkl. moms`;
     }
 
-    function statusHintText(s){
-      return (
-        s === "planned" ? "Planlagt: du kan udfylde resten senere (status ændres kun manuelt)." :
-        s === "completed" ? "Udført: job er gennemført, men ikke nødvendigvis faktureret endnu." :
-        s === "invoiced" ? "Faktureret: der er sendt faktura." :
-        s === "paid" ? "Betalt: faktura er betalt." :
-        s === "canceled" ? "Annulleret: job tæller ikke som udført." :
-        ""
-      );
+    function getClientById(id){
+      if (!id) return null;
+      return clients.find(c => c.id === id) || null;
     }
 
-    function applyNewStatusUI(){
-      $("statusHint").textContent = statusHintText($("statusSelect").value);
-    }
-    function applyEditStatusUI(){
-      $("editStatusHint").textContent = statusHintText($("editStatusSelect").value);
-    }
+    function renderClientSelects(){
+      const opts = clients
+        .slice()
+        .sort((a,b)=> String(a.name||"").localeCompare(String(b.name||"")))
+        .map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}${c.hourly_rate != null ? ` (${Number(c.hourly_rate).toFixed(2)}/t)` : ""}</option>`)
+        .join("");
 
-    // Timestamps: sæt kun hvis tomt og status kræver det. Overskriv aldrig eksisterende.
-    function addStatusStampsPreserve(existing, nextStatus){
-      const now = new Date().toISOString();
+      const base = `<option value="">(Manuel)</option>` + opts;
 
-      const out = {
-        completed_at: existing?.completed_at ?? null,
-        invoiced_at: existing?.invoiced_at ?? null,
-        paid_at: existing?.paid_at ?? null,
-        canceled_at: existing?.canceled_at ?? null,
-      };
+      $("clientSelect").innerHTML = base;
+      $("editClientSelect").innerHTML = base;
 
-      if (nextStatus === "completed") {
-        if (!out.completed_at) out.completed_at = now;
-      }
-
-      if (nextStatus === "invoiced") {
-        if (!out.completed_at) out.completed_at = now;
-        if (!out.invoiced_at) out.invoiced_at = now;
-      }
-
-      if (nextStatus === "paid") {
-        if (!out.completed_at) out.completed_at = now;
-        if (!out.invoiced_at) out.invoiced_at = now;
-        if (!out.paid_at) out.paid_at = now;
-      }
-
-      if (nextStatus === "canceled") {
-        if (!out.canceled_at) out.canceled_at = now;
-      }
-
-      // planned: rør ikke ved timestamps
-      return out;
+      updateClientManualVisibility();
+      updateEditClientManualVisibility();
+      updateClientRateHints();
+      updateEditClientRateHints();
+      maybeAutoCalcNewAmount();
+      maybeAutoCalcEditAmount();
     }
 
-    // State
-    let user = null;
-    let categories = [];
-    let jobs = [];
-    let editingId = null;
+    function updateClientManualVisibility(){
+      const isManual = !$("clientSelect").value;
+      $("clientManualWrap").classList.toggle("hidden", !isManual);
+    }
 
-    function setLoggedInUI(isIn){
-      $("loginCard").classList.toggle("hidden", isIn);
-      $("app").classList.toggle("hidden", !isIn);
-      $("logoutBtn").classList.toggle("hidden", !isIn);
-      $("statsLink").classList.toggle("hidden", !isIn);
-      $("whoami").textContent = isIn ? `Logget ind: ${user?.email ?? ""}` : "";
+    function updateEditClientManualVisibility(){
+      const isManual = !$("editClientSelect").value;
+      $("editClientManualWrap").classList.toggle("hidden", !isManual);
+    }
+
+    function updateClientRateHints(){
+      const c = getClientById($("clientSelect").value);
+      $("clientRateHint").textContent = c?.hourly_rate != null ? `Timepris: ${Number(c.hourly_rate).toFixed(2)} kr ex. moms` : "";
+    }
+
+    function updateEditClientRateHints(){
+      const c = getClientById($("editClientSelect").value);
+      $("editClientRateHint").textContent = c?.hourly_rate != null ? `Timepris: ${Number(c.hourly_rate).toFixed(2)} kr ex. moms` : "";
+    }
+
+    function maybeAutoCalcNewAmount(){
+      const auto = $("autoCalcAmount").checked;
+      const c = getClientById($("clientSelect").value);
+      const mins = parseWorkMinutes($("workText").value);
+      if (!auto) { $("autoCalcHint").textContent = "Auto-beregning er slået fra."; return; }
+
+      if (!c || c.hourly_rate == null || Number(c.hourly_rate) <= 0) {
+        $("autoCalcHint").textContent = "Vælg en kunde med timepris for auto-beregning (eller indtast beløb manuelt).";
+        return;
+      }
+      const amount = round2((mins / 60) * Number(c.hourly_rate));
+      $("invoiceExVat").value = amount ? amount.toFixed(2) : "";
+      $("autoCalcHint").textContent = mins ? `Auto: ${fmtH(mins)} × ${Number(c.hourly_rate).toFixed(2)} = ${amount.toFixed(2)} kr ex. moms` : "Skriv tid for at beregne beløb.";
+      updateNewInvoicePreview();
+    }
+
+    function maybeAutoCalcEditAmount(){
+      const auto = $("editAutoCalcAmount").checked;
+      const c = getClientById($("editClientSelect").value);
+      const mins = parseWorkMinutes($("editWorkText").value);
+      if (!auto) { $("editAutoCalcHint").textContent = "Auto-beregning er slået fra."; return; }
+
+      if (!c || c.hourly_rate == null || Number(c.hourly_rate) <= 0) {
+        $("editAutoCalcHint").textContent = "Vælg en kunde med timepris for auto-beregning (eller indtast beløb manuelt).";
+        return;
+      }
+      const amount = round2((mins / 60) * Number(c.hourly_rate));
+      $("editInvoiceExVat").value = amount ? amount.toFixed(2) : "";
+      $("editAutoCalcHint").textContent = mins ? `Auto: ${fmtH(mins)} × ${Number(c.hourly_rate).toFixed(2)} = ${amount.toFixed(2)} kr ex. moms` : "Skriv tid for at beregne beløb.";
+      updateEditInvoicePreview();
     }
 
     async function ensureDefaultCategories(){
@@ -661,14 +769,68 @@
       $("editCategorySelect").innerHTML = `<option value="">(Vælg)</option>` + opts;
     }
 
+    // -------- CLIENTS --------
+    async function loadClients(){
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id,name,hourly_rate")
+        .order("name", { ascending: true });
+
+      if (error) {
+        $("clientMsg").textContent = `Fejl ved hentning af kunder: ${error.message}`;
+        clients = [];
+        renderClientSelects();
+        renderClientsTable();
+        return;
+      }
+
+      clients = data ?? [];
+      $("clientMsg").textContent = "";
+      renderClientSelects();
+      renderClientsTable();
+    }
+
+    function renderClientsTable(){
+      $("clientsTbody").innerHTML = (clients || []).map(c => `
+        <tr>
+          <td>${escapeHtml(c.name)}</td>
+          <td>${c.hourly_rate == null ? "" : Number(c.hourly_rate).toFixed(2)}</td>
+          <td>
+            <button type="button" class="secondary" data-del-client="${escapeHtml(c.id)}">Slet</button>
+          </td>
+        </tr>
+      `).join("") || `<tr><td colspan="3" class="muted">Ingen kunder endnu</td></tr>`;
+
+      document.querySelectorAll("button[data-del-client]").forEach(btn => {
+        btn.addEventListener("click", () => deleteClient(btn.getAttribute("data-del-client")));
+      });
+    }
+
+    async function deleteClient(id){
+      if (!id) return;
+      if (!confirm("Slet kunde? (kan fejle hvis kunden bruges af jobs)")) return;
+
+      $("clientMsg").textContent = "";
+      const { error } = await supabase.from("clients").delete().eq("id", id);
+      if (error) { $("clientMsg").textContent = error.message; return; }
+
+      $("clientMsg").textContent = "Kunde slettet ✅";
+      await loadClients();
+      await loadJobs();
+      await loadReportRows();
+    }
+    // -------------------------
+
     async function loadJobs(){
       const { data, error } = await supabase
         .from("jobs")
         .select(`
-          id, status, job_date, client, invoice_no, work_minutes, work_text, travel_minutes, invoice_amount_ex_vat, notes,
+          id, job_date, status,
+          client, client_id,
+          invoice_no, work_minutes, work_text, travel_minutes, invoice_amount_ex_vat, notes,
           category_id,
-          completed_at, invoiced_at, paid_at, canceled_at,
-          categories(name)
+          categories(name),
+          clients(name,hourly_rate)
         `)
         .order("job_date", { ascending: false })
         .order("created_at", { ascending: false });
@@ -682,7 +844,10 @@
 
       jobs = (data ?? []).map(r => ({
         ...r,
-        category_name: r.categories?.name ?? ""
+        status: r.status || "draft",
+        category_name: r.categories?.name ?? "",
+        client_name: r.clients?.name ?? r.client ?? "",
+        client_rate: r.clients?.hourly_rate ?? null
       }));
 
       $("tableMsg").textContent = "";
@@ -697,14 +862,22 @@
     }
 
     function computeStats(filtered){
-      const counted = filtered.filter(j => ["completed","invoiced","paid"].includes(j.status));
-      const totalJobs = counted.length;
-      const totalWorkMin = counted.reduce((a,j)=>a+(Number(j.work_minutes)||0),0);
-      const totalTravelMin = counted.reduce((a,j)=>a+(Number(j.travel_minutes)||0),0);
-      const totalInvoiceEx = counted.reduce((a,j)=>a+(Number(j.invoice_amount_ex_vat)||0),0);
+      const totalJobs = filtered.length;
+      const totalWorkMin = filtered.reduce((a,j)=>a+(Number(j.work_minutes)||0),0);
+      const totalTravelMin = filtered.reduce((a,j)=>a+(Number(j.travel_minutes)||0),0);
+      const totalInvoiceEx = filtered.reduce((a,j)=>a+(Number(j.invoice_amount_ex_vat)||0),0);
+
+      const catMap = new Map();
+      for (const j of filtered) {
+        const key = j.category_name || "(Ingen)";
+        const cur = catMap.get(key) || { count:0, minutes:0 };
+        cur.count += 1;
+        cur.minutes += Number(j.work_minutes)||0;
+        catMap.set(key, cur);
+      }
 
       const monthMap = new Map();
-      for (const j of counted) {
+      for (const j of filtered) {
         const y = String(j.job_date||"").slice(0,4);
         const m = String(j.job_date||"").slice(5,7);
         if (!y || !m) continue;
@@ -712,13 +885,7 @@
         monthMap.set(key, (monthMap.get(key)||0) + (Number(j.work_minutes)||0));
       }
 
-      const statusMap = new Map();
-      for (const j of filtered) {
-        const s = j.status || "planned";
-        statusMap.set(s, (statusMap.get(s)||0) + 1);
-      }
-
-      return { totalJobs, totalWorkMin, totalTravelMin, totalInvoiceEx, monthMap, statusMap };
+      return { totalJobs, totalWorkMin, totalTravelMin, totalInvoiceEx, catMap, monthMap };
     }
 
     function renderStats(filtered){
@@ -726,9 +893,9 @@
       const totalInvoiceIncl = inclVat(s.totalInvoiceEx);
 
       $("totals").innerHTML = `
-        <div class="stat"><div class="k">Jobs (udført+)</div><div class="v">${s.totalJobs}</div></div>
-        <div class="stat"><div class="k">Arbejdstid</div><div class="v">${fmtH(s.totalWorkMin)}</div></div>
-        <div class="stat"><div class="k">Transport</div><div class="v">${fmtH(s.totalTravelMin)}</div></div>
+        <div class="stat"><div class="k">Jobs i alt</div><div class="v">${s.totalJobs}</div></div>
+        <div class="stat"><div class="k">Arbejdstid i alt</div><div class="v">${fmtH(s.totalWorkMin)}</div></div>
+        <div class="stat"><div class="k">Transport i alt</div><div class="v">${fmtH(s.totalTravelMin)}</div></div>
         <div class="stat">
           <div class="k">Fakturering ex. moms</div>
           <div class="v">${s.totalInvoiceEx.toFixed(2)}</div>
@@ -736,16 +903,22 @@
         </div>
       `;
 
-      const stRows = ["planned","completed","invoiced","paid","canceled"].map(k => `
-        <tr><td>${escapeHtml(statusLabel(k))}</td><td>${Number(s.statusMap.get(k)||0)}</td></tr>
-      `).join("");
-      $("byStatus").innerHTML = stRows;
+      const catRows = Array.from(s.catMap.entries())
+        .sort((a,b)=> (b[1].count - a[1].count) || a[0].localeCompare(b[0]))
+        .map(([name, v]) => `
+          <tr>
+            <td>${escapeHtml(name)}</td>
+            <td>${v.count}</td>
+            <td>${fmtH(v.minutes)}</td>
+          </tr>
+        `).join("");
+      $("byCategory").innerHTML = catRows || `<tr><td colspan="3" class="muted">Ingen data endnu</td></tr>`;
 
       const monthRows = Array.from(s.monthMap.entries())
         .sort((a,b)=> b[0].localeCompare(a[0]))
         .map(([ym, minutes]) => `
           <tr>
-            <td>${escapeHtml(ym)}</td>
+            <td>${ym}</td>
             <td>${fmtH(minutes)}</td>
           </tr>
         `).join("");
@@ -755,17 +928,21 @@
     function filterJobs(){
       const q = $("search").value.trim().toLowerCase();
       const y = $("yearFilter").value;
-      const sf = $("statusFilter").value;
+      const st = $("statusFilter").value;
 
       return jobs.filter(j => {
         if (y && String(j.job_date||"").slice(0,4) !== y) return false;
-        if (sf && String(j.status||"") !== sf) return false;
+        if (st && String(j.status||"draft") !== st) return false;
         if (!q) return true;
 
         const hay = [
-          j.id, j.client, j.invoice_no, j.category_name,
-          String(j.invoice_amount_ex_vat ?? ""),
-          j.status
+          j.id,
+          j.client_name,
+          j.client,
+          j.invoice_no,
+          j.category_name,
+          j.status,
+          String(j.invoice_amount_ex_vat ?? "")
         ].join(" ").toLowerCase();
 
         return hay.includes(q);
@@ -776,23 +953,23 @@
       $("jobsTbody").innerHTML = filtered.map(j => {
         const ex = Number(j.invoice_amount_ex_vat || 0);
         const incl = inclVat(ex);
-        const s = j.status || "planned";
-        const hasEx = j.invoice_amount_ex_vat !== null && j.invoice_amount_ex_vat !== undefined && String(j.invoice_amount_ex_vat) !== "";
         return `
           <tr>
             <td class="mono">${escapeHtml(j.id)}</td>
-            <td><span class="pill ${statusPillClass(s)}">${escapeHtml(statusLabel(s))}</span></td>
             <td>${escapeHtml(j.job_date)}</td>
-            <td>${escapeHtml(j.client || "")}</td>
+            <td>${statusBadge(j.status)}</td>
+            <td>${escapeHtml(j.client_name || "")}</td>
             <td><span class="pill">${escapeHtml(j.category_name || "(Ingen)")}</span></td>
             <td>${escapeHtml(j.invoice_no || "")}</td>
             <td>${fmtH(j.work_minutes || 0)}</td>
             <td>${fmtH(j.travel_minutes || 0)}</td>
             <td>
-              ${hasEx ? Number(ex).toFixed(2) : "—"}<br>
-              ${hasEx ? `<small class="muted">(${incl.toFixed(2)} inkl. moms)</small>` : `<small class="muted">—</small>`}
+              ${ex.toFixed(2)}<br>
+              <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
             </td>
-            <td><button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button></td>
+            <td>
+              <button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button>
+            </td>
           </tr>
         `;
       }).join("");
@@ -810,7 +987,7 @@
     }
 
     function exportCSV(filtered){
-      const header = ["JobID","Status","Dato","Kunde","Kategori","FakturaNr","WorkMin","WorkText","TransportMin","BeløbExMoms","BeløbInclMoms","Noter"];
+      const header = ["JobID","Dato","Status","Kunde","Kategori","FakturaNr","WorkMin","WorkText","TransportMin","BeløbExMoms","BeløbInclMoms","Noter","ClientID"];
       const lines = [header.join(",")];
 
       const esc = (s) => {
@@ -821,20 +998,20 @@
       for (const j of filtered) {
         const ex = Number(j.invoice_amount_ex_vat || 0);
         const incl = inclVat(ex);
-        const hasEx = j.invoice_amount_ex_vat !== null && j.invoice_amount_ex_vat !== undefined && String(j.invoice_amount_ex_vat) !== "";
         lines.push([
           esc(j.id),
-          esc(j.status),
           esc(j.job_date),
-          esc(j.client),
+          esc(j.status || "draft"),
+          esc(j.client_name || j.client || ""),
           esc(j.category_name),
           esc(j.invoice_no),
           esc(j.work_minutes),
           esc(j.work_text),
           esc(j.travel_minutes),
-          esc(hasEx ? Number(ex).toFixed(2) : ""),
-          esc(hasEx ? incl.toFixed(2) : ""),
+          esc(ex.toFixed(2)),
+          esc(incl.toFixed(2)),
           esc(j.notes),
+          esc(j.client_id || "")
         ].join(","));
       }
 
@@ -849,6 +1026,123 @@
       URL.revokeObjectURL(url);
     }
 
+    // ---------------- REPORT (monthly per client) ----------------
+    function setSelectOptions(selectEl, values, placeholder = "(Alle)") {
+      const opts = values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+      selectEl.innerHTML = `<option value="">${placeholder}</option>` + opts;
+    }
+
+    async function loadReportRows(){
+      $("reportMsg").textContent = "Henter rapport…";
+
+      const { data, error } = await supabase
+        .from("v_monthly_client_report")
+        .select("ym,client,jobs,work_minutes,travel_minutes,invoice_ex_vat")
+        .eq("user_id", user.id)
+        .order("ym", { ascending: false })
+        .order("client", { ascending: true });
+
+      if (error) {
+        $("reportMsg").textContent = `Fejl: ${error.message}`;
+        reportRows = [];
+        renderReport();
+        return;
+      }
+
+      reportRows = data ?? [];
+      $("reportMsg").textContent = "";
+
+      const months = Array.from(new Set(reportRows.map(r => r.ym))).sort((a,b)=>b.localeCompare(a));
+      const clients = Array.from(new Set(reportRows.map(r => r.client))).sort((a,b)=>a.localeCompare(b));
+
+      setSelectOptions($("reportMonth"), months, "(Alle måneder)");
+      setSelectOptions($("reportClient"), clients, "(Alle kunder)");
+
+      if (!$("reportMonth").dataset.initialized) {
+        $("reportMonth").value = months[0] || "";
+        $("reportMonth").dataset.initialized = "1";
+      }
+
+      renderReport();
+    }
+
+    function getFilteredReportRows(){
+      const m = $("reportMonth").value;
+      const c = $("reportClient").value;
+
+      return reportRows.filter(r => {
+        if (m && r.ym !== m) return false;
+        if (c && r.client !== c) return false;
+        return true;
+      });
+    }
+
+    function renderReport(){
+      const rows = getFilteredReportRows();
+
+      if (!rows.length) {
+        $("reportTbody").innerHTML = `<tr><td colspan="6" class="muted">Ingen rapport-data for det valg</td></tr>`;
+        return;
+      }
+
+      $("reportTbody").innerHTML = rows.map(r => {
+        const ex = Number(r.invoice_ex_vat || 0);
+        const incl = inclVat(ex);
+        return `
+          <tr>
+            <td>${escapeHtml(r.ym)}</td>
+            <td>${escapeHtml(r.client)}</td>
+            <td>${Number(r.jobs || 0)}</td>
+            <td>${fmtH(r.work_minutes || 0)}</td>
+            <td>${fmtH(r.travel_minutes || 0)}</td>
+            <td>
+              ${ex.toFixed(2)}<br>
+              <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function exportReportCSV(){
+      const rows = getFilteredReportRows();
+
+      const header = ["Måned","Kunde","Jobs","WorkMin","WorkTimer","TransportMin","TransportTimer","FaktureringExMoms","FaktureringInclMoms"];
+      const lines = [header.join(",")];
+
+      const esc = (s) => {
+        const str = String(s ?? "");
+        return /[,"\n]/.test(str) ? `"${str.replace(/"/g,'""')}"` : str;
+      };
+
+      for (const r of rows) {
+        const ex = Number(r.invoice_ex_vat || 0);
+        const incl = inclVat(ex);
+        lines.push([
+          esc(r.ym),
+          esc(r.client),
+          esc(r.jobs),
+          esc(r.work_minutes),
+          esc(fmtH(r.work_minutes)),
+          esc(r.travel_minutes),
+          esc(fmtH(r.travel_minutes)),
+          esc(ex.toFixed(2)),
+          esc(incl.toFixed(2)),
+        ].join(","));
+      }
+
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rsadm_report_${todayISO()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+    // -------------------------------------------------------------
+
     // AUTH
     async function checkSession(){
       const { data } = await supabase.auth.getSession();
@@ -857,12 +1151,12 @@
 
       if (user) {
         $("jobDate").value = todayISO();
-        $("statusSelect").value = "planned";
-        applyNewStatusUI();
-
+        $("statusSelect").value = "draft";
+        await loadClients();
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
+        await loadReportRows();
       }
     }
 
@@ -876,14 +1170,13 @@
 
       user = data.user;
       setLoggedInUI(true);
-
       $("jobDate").value = todayISO();
-      $("statusSelect").value = "planned";
-      applyNewStatusUI();
-
+      $("statusSelect").value = "draft";
+      await loadClients();
       await loadCategories();
       await ensureDefaultCategories();
       await loadJobs();
+      await loadReportRows();
     });
 
     $("signupBtn").addEventListener("click", async () => {
@@ -901,9 +1194,33 @@
       await supabase.auth.signOut();
       user = null;
       categories = [];
+      clients = [];
       jobs = [];
+      reportRows = [];
       setLoggedInUI(false);
     });
+
+    // Clients actions
+    $("addClientBtn").addEventListener("click", async () => {
+      $("clientMsg").textContent = "";
+      const name = $("newClientName").value.trim();
+      const hourly_rate = $("newClientRate").value === "" ? null : Number($("newClientRate").value);
+
+      if (!name) { $("clientMsg").textContent = "Skriv et kundenavn."; return; }
+
+      const { error } = await supabase
+        .from("clients")
+        .insert({ user_id: user.id, name, hourly_rate });
+
+      if (error) { $("clientMsg").textContent = error.message; return; }
+
+      $("newClientName").value = "";
+      $("newClientRate").value = "";
+      $("clientMsg").textContent = "Kunde tilføjet ✅";
+      await loadClients();
+    });
+
+    $("refreshClientsBtn").addEventListener("click", loadClients);
 
     // Categories
     $("addCategoryBtn").addEventListener("click", async () => {
@@ -920,61 +1237,78 @@
       renderAll();
     });
 
-    // Create job (MANUEL STATUS)
+    // Create job
     $("createJobBtn").addEventListener("click", async () => {
       $("jobMsg").textContent = "";
 
-      const invoice_no = $("invoiceNo").value.trim() || null;
+      const invoice_no = $("invoiceNo").value.trim();
       const job_date = $("jobDate").value || todayISO();
       const category_id = $("categorySelect").value || null;
-      const client = $("client").value.trim();
-      const status = $("statusSelect").value;
 
-      if (!client) { $("jobMsg").textContent = "Skriv en kunde."; return; }
+      const status = $("statusSelect").value || "draft";
+
+      const client_id = $("clientSelect").value || null;
+      const client = client_id ? (getClientById(client_id)?.name || null) : ($("clientManual").value.trim() || null);
 
       const work_text = $("workText").value.trim();
       const work_minutes = parseWorkMinutes(work_text);
 
+      // auto-calc (if enabled and client has rate)
+      if ($("autoCalcAmount").checked && client_id) {
+        const c = getClientById(client_id);
+        if (c?.hourly_rate != null && Number(c.hourly_rate) > 0) {
+          const amount = round2((work_minutes / 60) * Number(c.hourly_rate));
+          $("invoiceExVat").value = amount ? amount.toFixed(2) : "";
+          updateNewInvoicePreview();
+        }
+      }
+
       const travel_minutes = Math.max(0, Number($("travelMinutes").value || 0));
       const invoice_amount_ex_vat = $("invoiceExVat").value === "" ? null : Number($("invoiceExVat").value);
       const notes = $("notes").value.trim() || null;
-
-      const stamps = addStatusStampsPreserve(null, status);
 
       const { error } = await supabase.from("jobs").insert({
         user_id: user.id,
         invoice_no,
         job_date,
         category_id,
+        status,
+        client_id,
         client,
         work_minutes,
         work_text,
         travel_minutes,
         invoice_amount_ex_vat,
-        notes,
-        status,
-        ...stamps
+        notes
       });
 
       if (error) { $("jobMsg").textContent = error.message; return; }
 
-      $("jobMsg").textContent = "Job gemt ✅";
+      $("jobMsg").textContent = "Job gemt ✅ (ID er genereret automatisk)";
       resetJobForm();
       await loadJobs();
+      await loadReportRows();
     });
 
     function resetJobForm(){
       $("invoiceNo").value = "";
       $("jobDate").value = todayISO();
-      $("statusSelect").value = "planned";
       $("categorySelect").value = "";
-      $("client").value = "";
+      $("statusSelect").value = "draft";
+
+      $("clientSelect").value = "";
+      $("clientManual").value = "";
+      updateClientManualVisibility();
+      updateClientRateHints();
+
       $("workText").value = "";
       $("travelMinutes").value = "";
       $("invoiceExVat").value = "";
       $("invoiceInclPreview").textContent = "";
       $("notes").value = "";
-      applyNewStatusUI();
+
+      $("autoCalcAmount").checked = true;
+      $("autoCalcHint").textContent = "";
     }
 
     $("resetJobBtn").addEventListener("click", resetJobForm);
@@ -988,18 +1322,25 @@
       $("editCard").classList.remove("hidden");
       $("editId").textContent = id;
 
-      $("editStatusSelect").value = j.status ?? "planned";
       $("editInvoiceNo").value = j.invoice_no ?? "";
       $("editJobDate").value = j.job_date ?? todayISO();
       $("editCategorySelect").value = j.category_id ?? "";
-      $("editClient").value = j.client ?? "";
+      $("editStatusSelect").value = j.status ?? "draft";
+
+      $("editClientSelect").value = j.client_id ?? "";
+      $("editClientManual").value = (j.client_id ? "" : (j.client ?? j.client_name ?? ""));
+      updateEditClientManualVisibility();
+      updateEditClientRateHints();
+
       $("editWorkText").value = j.work_text ?? "";
       $("editTravelMinutes").value = j.travel_minutes ?? 0;
       $("editInvoiceExVat").value = j.invoice_amount_ex_vat ?? "";
       $("editNotes").value = j.notes ?? "";
 
-      applyEditStatusUI();
+      $("editAutoCalcAmount").checked = true;
       updateEditInvoicePreview();
+      maybeAutoCalcEditAmount();
+
       $("editMsg").textContent = "";
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }
@@ -1009,32 +1350,33 @@
       $("editCard").classList.add("hidden");
     });
 
-    // Save edit (MANUEL STATUS)
     $("saveEditBtn").addEventListener("click", async () => {
       if (!editingId) return;
       $("editMsg").textContent = "";
 
-      const j = jobs.find(x => x.id === editingId);
-      if (!j) { $("editMsg").textContent = "Kunne ikke finde job i listen."; return; }
-
-      const status = $("editStatusSelect").value;
-
       const work_text = $("editWorkText").value.trim();
       const work_minutes = parseWorkMinutes(work_text);
 
-      const patch = {
-        status,
-        ...addStatusStampsPreserve({
-          completed_at: j.completed_at,
-          invoiced_at: j.invoiced_at,
-          paid_at: j.paid_at,
-          canceled_at: j.canceled_at
-        }, status),
+      const client_id = $("editClientSelect").value || null;
+      const client = client_id ? (getClientById(client_id)?.name || null) : ($("editClientManual").value.trim() || null);
 
-        invoice_no: $("editInvoiceNo").value.trim() || null,
+      // auto-calc in edit
+      if ($("editAutoCalcAmount").checked && client_id) {
+        const c = getClientById(client_id);
+        if (c?.hourly_rate != null && Number(c.hourly_rate) > 0) {
+          const amount = round2((work_minutes / 60) * Number(c.hourly_rate));
+          $("editInvoiceExVat").value = amount ? amount.toFixed(2) : "";
+          updateEditInvoicePreview();
+        }
+      }
+
+      const patch = {
+        invoice_no: $("editInvoiceNo").value.trim(),
         job_date: $("editJobDate").value || todayISO(),
         category_id: $("editCategorySelect").value || null,
-        client: $("editClient").value.trim(),
+        status: $("editStatusSelect").value || "draft",
+        client_id,
+        client,
         work_text,
         work_minutes,
         travel_minutes: Math.max(0, Number($("editTravelMinutes").value || 0)),
@@ -1042,13 +1384,12 @@
         notes: $("editNotes").value.trim() || null
       };
 
-      if (!patch.client) { $("editMsg").textContent = "Kunde må ikke være tom."; return; }
-
       const { error } = await supabase.from("jobs").update(patch).eq("id", editingId);
       if (error) { $("editMsg").textContent = error.message; return; }
 
       $("editMsg").textContent = "Rettet ✅";
       await loadJobs();
+      await loadReportRows();
       $("editCard").classList.add("hidden");
       editingId = null;
     });
@@ -1061,25 +1402,48 @@
       if (error) { $("editMsg").textContent = error.message; return; }
 
       await loadJobs();
+      await loadReportRows();
       $("editCard").classList.add("hidden");
       editingId = null;
     });
 
     // Filters & actions
-    $("refreshBtn").addEventListener("click", async () => { await loadJobs(); });
+    $("refreshBtn").addEventListener("click", async () => { await loadClients(); await loadJobs(); await loadReportRows(); });
     $("search").addEventListener("input", renderAll);
     $("yearFilter").addEventListener("change", renderAll);
     $("statusFilter").addEventListener("change", renderAll);
 
     $("exportBtn").addEventListener("click", () => {
-      exportCSV(filterJobs());
+      const filtered = filterJobs();
+      exportCSV(filtered);
     });
 
-    // UI events
+    // Report actions
+    $("reportRefreshBtn").addEventListener("click", loadReportRows);
+    $("reportExportBtn").addEventListener("click", exportReportCSV);
+    $("reportMonth").addEventListener("change", renderReport);
+    $("reportClient").addEventListener("change", renderReport);
+
+    // Invoice previews + auto calc (NEW JOB)
     $("invoiceExVat").addEventListener("input", updateNewInvoicePreview);
+    $("workText").addEventListener("input", () => { maybeAutoCalcNewAmount(); });
+    $("autoCalcAmount").addEventListener("change", () => { maybeAutoCalcNewAmount(); });
+    $("clientSelect").addEventListener("change", () => {
+      updateClientManualVisibility();
+      updateClientRateHints();
+      maybeAutoCalcNewAmount();
+    });
+    $("clientManual").addEventListener("input", () => { /* no-op */ });
+
+    // Invoice previews + auto calc (EDIT)
     $("editInvoiceExVat").addEventListener("input", updateEditInvoicePreview);
-    $("statusSelect").addEventListener("change", applyNewStatusUI);
-    $("editStatusSelect").addEventListener("change", applyEditStatusUI);
+    $("editWorkText").addEventListener("input", () => { maybeAutoCalcEditAmount(); });
+    $("editAutoCalcAmount").addEventListener("change", () => { maybeAutoCalcEditAmount(); });
+    $("editClientSelect").addEventListener("change", () => {
+      updateEditClientManualVisibility();
+      updateEditClientRateHints();
+      maybeAutoCalcEditAmount();
+    });
 
     // Initial
     await checkSession();
@@ -1089,12 +1453,12 @@
       setLoggedInUI(!!user);
       if (user) {
         $("jobDate").value = todayISO();
-        $("statusSelect").value = "planned";
-        applyNewStatusUI();
-
+        $("statusSelect").value = "draft";
+        await loadClients();
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
+        await loadReportRows();
       }
     });
   </script>
