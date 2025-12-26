@@ -214,7 +214,7 @@
     <div class="topbar">
       <div>
         <h1>RSADM – Job & Faktura Overblik</h1>
-        <p class="muted">Login → planlæg jobs → udfør → fakturér → betalt.</p>
+        <p class="muted">Login → opret/ret jobs → status ændres manuelt.</p>
       </div>
 
       <div class="right">
@@ -267,27 +267,6 @@
         <p class="muted" id="catMsg"></p>
       </div>
 
-      <!-- Planned jobs (quick list) -->
-      <div class="card">
-        <h2>Kommende planlagte jobs</h2>
-        <p class="small muted" style="margin-top:6px;">Tip: Opret “Planlagt” nu – udfyld tid/transport/beløb senere.</p>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Dato</th>
-              <th>Kunde</th>
-              <th>Kategori</th>
-              <th>Status</th>
-              <th>Handling</th>
-            </tr>
-          </thead>
-          <tbody id="plannedTbody"></tbody>
-        </table>
-
-        <p class="muted" id="plannedMsg"></p>
-      </div>
-
       <!-- New job -->
       <div class="card">
         <h2>Nyt job</h2>
@@ -303,7 +282,7 @@
           </div>
 
           <div>
-            <label>Status</label>
+            <label>Status (manuelt)</label>
             <select id="statusSelect">
               <option value="planned">Planlagt</option>
               <option value="completed">Udført</option>
@@ -354,7 +333,7 @@
         <p id="jobMsg" class="muted"></p>
       </div>
 
-      <!-- Stats (quick) -->
+      <!-- Quick stats -->
       <div class="card">
         <h2>Overblik</h2>
         <div class="totals" id="totals"></div>
@@ -369,50 +348,14 @@
           </div>
 
           <div>
-            <h3 style="margin:0 0 8px;">Timer pr. måned</h3>
+            <h3 style="margin:0 0 8px;">Timer pr. måned (udført+)</h3>
             <table>
               <thead><tr><th>Måned</th><th>Timer</th></tr></thead>
               <tbody id="byMonth"></tbody>
             </table>
           </div>
         </div>
-      </div>
-
-      <!-- Report (own card) -->
-      <div class="card" id="reportCard">
-        <h2>Månedsrapport pr. kunde</h2>
-
-        <div class="grid" style="margin-top:12px;">
-          <div>
-            <label>Måned</label>
-            <select id="reportMonth"></select>
-          </div>
-          <div>
-            <label>Kunde</label>
-            <select id="reportClient"></select>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:12px;">
-          <button id="reportRefreshBtn" type="button" class="secondary">Opdater rapport</button>
-          <button id="reportExportBtn" type="button">Eksport rapport CSV</button>
-        </div>
-
-        <table style="margin-top:12px;">
-          <thead>
-            <tr>
-              <th>Måned</th>
-              <th>Kunde</th>
-              <th>Jobs</th>
-              <th>Arbejdstid</th>
-              <th>Transport</th>
-              <th>Fakturering ex. moms</th>
-            </tr>
-          </thead>
-          <tbody id="reportTbody"></tbody>
-        </table>
-
-        <p class="muted" id="reportMsg"></p>
+        <p class="small muted" style="margin-top:10px;">Bemærk: “Timer pr. måned” tæller kun Udført/Faktureret/Betalt.</p>
       </div>
 
       <!-- Jobs table -->
@@ -473,7 +416,7 @@
 
         <div class="grid" style="margin-top:12px;">
           <div>
-            <label>Status</label>
+            <label>Status (manuelt)</label>
             <select id="editStatusSelect">
               <option value="planned">Planlagt</option>
               <option value="completed">Udført</option>
@@ -572,7 +515,6 @@
       }[c]));
     }
 
-    // Parse work text -> minutes
     function parseWorkMinutes(input){
       const s = String(input ?? "").trim().toLowerCase();
       if (!s) return 0;
@@ -611,53 +553,6 @@
       }[s] || "");
     }
 
-    function shouldDisableMoneyFields(status){
-      return status === "planned" || status === "canceled";
-    }
-
-    function autoStatusFromFields({ chosenStatus, work_minutes, invoice_no, invoice_amount_ex_vat, forcePaid }){
-      if (chosenStatus === "canceled") return "canceled";
-      if (chosenStatus === "paid" || forcePaid) return "paid";
-
-      const hasWork = Number(work_minutes || 0) > 0;
-      const hasInvoice = !!String(invoice_no || "").trim() || (invoice_amount_ex_vat !== null && invoice_amount_ex_vat !== undefined);
-
-      // Hvis bruger vælger "planned" manuelt, respekter - men kun hvis der ikke er data der modsiger
-      if (chosenStatus === "planned" && !hasWork && !hasInvoice) return "planned";
-
-      if (hasInvoice) return "invoiced";
-      if (hasWork) return "completed";
-      return "planned";
-    }
-
-    function stampsForStatus(nextStatus){
-      const now = new Date().toISOString();
-      return {
-        completed_at: (nextStatus === "completed" || nextStatus === "invoiced" || nextStatus === "paid") ? now : null,
-        invoiced_at: (nextStatus === "invoiced" || nextStatus === "paid") ? now : null,
-        paid_at: (nextStatus === "paid") ? now : null,
-        canceled_at: (nextStatus === "canceled") ? now : null,
-      };
-    }
-
-    // State
-    let user = null;
-    let categories = [];
-    let jobs = [];
-    let editingId = null;
-
-    // REPORT STATE
-    let reportRows = [];
-
-    function setLoggedInUI(isIn){
-      $("loginCard").classList.toggle("hidden", isIn);
-      $("app").classList.toggle("hidden", !isIn);
-      $("logoutBtn").classList.toggle("hidden", !isIn);
-      $("statsLink").classList.toggle("hidden", !isIn);
-
-      $("whoami").textContent = isIn ? `Logget ind: ${user?.email ?? ""}` : "";
-    }
-
     function updateNewInvoicePreview(){
       const ex = $("invoiceExVat").value === "" ? null : Number($("invoiceExVat").value);
       $("invoiceInclPreview").textContent = ex === null ? "" : `= ${inclVat(ex).toFixed(2)} inkl. moms`;
@@ -668,34 +563,70 @@
       $("editInvoiceInclPreview").textContent = ex === null ? "" : `= ${inclVat(ex).toFixed(2)} inkl. moms`;
     }
 
-    function applyNewStatusUI(){
-      const s = $("statusSelect").value;
-      $("statusHint").textContent =
-        s === "planned" ? "Planlagt: du kan udfylde tid/transport/beløb senere." :
-        s === "canceled" ? "Annulleret: gemmes men tæller ikke med i statistik." :
-        "Tip: udfyld tid og beløb – status opdateres automatisk til Udført/Faktureret.";
-
-      const dis = shouldDisableMoneyFields(s);
-      $("workText").disabled = dis && s === "planned";
-      $("travelMinutes").disabled = dis && s === "planned";
-      $("invoiceExVat").disabled = dis;
-      $("invoiceNo").disabled = false;
-
-      if (dis && s === "planned"){
-        // lad det være muligt at gemme planlagt uden alt muligt
-        // men vi rydder ikke felterne automatisk
-      }
-      updateNewInvoicePreview();
+    function statusHintText(s){
+      return (
+        s === "planned" ? "Planlagt: du kan udfylde resten senere (status ændres kun manuelt)." :
+        s === "completed" ? "Udført: job er gennemført, men ikke nødvendigvis faktureret endnu." :
+        s === "invoiced" ? "Faktureret: der er sendt faktura." :
+        s === "paid" ? "Betalt: faktura er betalt." :
+        s === "canceled" ? "Annulleret: job tæller ikke som udført." :
+        ""
+      );
     }
 
+    function applyNewStatusUI(){
+      $("statusHint").textContent = statusHintText($("statusSelect").value);
+    }
     function applyEditStatusUI(){
-      const s = $("editStatusSelect").value;
-      $("editStatusHint").textContent =
-        s === "planned" ? "Planlagt: udfyld tid/beløb senere, så bliver den automatisk Udført/Faktureret." :
-        s === "paid" ? "Betalt: sætter paid_at (nu)." :
-        s === "canceled" ? "Annulleret: tæller ikke med i statistik." :
-        "";
-      updateEditInvoicePreview();
+      $("editStatusHint").textContent = statusHintText($("editStatusSelect").value);
+    }
+
+    // Timestamps: sæt kun hvis tomt og status kræver det. Overskriv aldrig eksisterende.
+    function addStatusStampsPreserve(existing, nextStatus){
+      const now = new Date().toISOString();
+
+      const out = {
+        completed_at: existing?.completed_at ?? null,
+        invoiced_at: existing?.invoiced_at ?? null,
+        paid_at: existing?.paid_at ?? null,
+        canceled_at: existing?.canceled_at ?? null,
+      };
+
+      if (nextStatus === "completed") {
+        if (!out.completed_at) out.completed_at = now;
+      }
+
+      if (nextStatus === "invoiced") {
+        if (!out.completed_at) out.completed_at = now;
+        if (!out.invoiced_at) out.invoiced_at = now;
+      }
+
+      if (nextStatus === "paid") {
+        if (!out.completed_at) out.completed_at = now;
+        if (!out.invoiced_at) out.invoiced_at = now;
+        if (!out.paid_at) out.paid_at = now;
+      }
+
+      if (nextStatus === "canceled") {
+        if (!out.canceled_at) out.canceled_at = now;
+      }
+
+      // planned: rør ikke ved timestamps
+      return out;
+    }
+
+    // State
+    let user = null;
+    let categories = [];
+    let jobs = [];
+    let editingId = null;
+
+    function setLoggedInUI(isIn){
+      $("loginCard").classList.toggle("hidden", isIn);
+      $("app").classList.toggle("hidden", !isIn);
+      $("logoutBtn").classList.toggle("hidden", !isIn);
+      $("statsLink").classList.toggle("hidden", !isIn);
+      $("whoami").textContent = isIn ? `Logget ind: ${user?.email ?? ""}` : "";
     }
 
     async function ensureDefaultCategories(){
@@ -746,7 +677,6 @@
         $("tableMsg").textContent = `Fejl ved hentning af jobs: ${error.message}`;
         jobs = [];
         renderAll();
-        renderPlannedList();
         return;
       }
 
@@ -757,7 +687,6 @@
 
       $("tableMsg").textContent = "";
       renderAll();
-      renderPlannedList();
     }
 
     function renderYearFilter(){
@@ -768,7 +697,6 @@
     }
 
     function computeStats(filtered){
-      // kun "rigtige" jobs tæller i totals
       const counted = filtered.filter(j => ["completed","invoiced","paid"].includes(j.status));
       const totalJobs = counted.length;
       const totalWorkMin = counted.reduce((a,j)=>a+(Number(j.work_minutes)||0),0);
@@ -849,12 +777,11 @@
         const ex = Number(j.invoice_amount_ex_vat || 0);
         const incl = inclVat(ex);
         const s = j.status || "planned";
+        const hasEx = j.invoice_amount_ex_vat !== null && j.invoice_amount_ex_vat !== undefined && String(j.invoice_amount_ex_vat) !== "";
         return `
           <tr>
             <td class="mono">${escapeHtml(j.id)}</td>
-            <td>
-              <span class="pill ${statusPillClass(s)}">${escapeHtml(statusLabel(s))}</span>
-            </td>
+            <td><span class="pill ${statusPillClass(s)}">${escapeHtml(statusLabel(s))}</span></td>
             <td>${escapeHtml(j.job_date)}</td>
             <td>${escapeHtml(j.client || "")}</td>
             <td><span class="pill">${escapeHtml(j.category_name || "(Ingen)")}</span></td>
@@ -862,12 +789,10 @@
             <td>${fmtH(j.work_minutes || 0)}</td>
             <td>${fmtH(j.travel_minutes || 0)}</td>
             <td>
-              ${ex ? ex.toFixed(2) : "—"}<br>
-              ${ex ? `<small class="muted">(${incl.toFixed(2)} inkl. moms)</small>` : `<small class="muted">—</small>`}
+              ${hasEx ? Number(ex).toFixed(2) : "—"}<br>
+              ${hasEx ? `<small class="muted">(${incl.toFixed(2)} inkl. moms)</small>` : `<small class="muted">—</small>`}
             </td>
-            <td>
-              <button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button>
-            </td>
+            <td><button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button></td>
           </tr>
         `;
       }).join("");
@@ -875,38 +800,6 @@
       document.querySelectorAll("button[data-edit]").forEach(btn => {
         btn.addEventListener("click", () => openEdit(btn.getAttribute("data-edit")));
       });
-    }
-
-    function renderPlannedList(){
-      const today = todayISO();
-      const planned = jobs
-        .filter(j => (j.status === "planned") && String(j.job_date||"") >= today)
-        .sort((a,b)=> String(a.job_date||"").localeCompare(String(b.job_date||"")))
-        .slice(0, 25);
-
-      if (!planned.length){
-        $("plannedTbody").innerHTML = `<tr><td colspan="5" class="muted">Ingen kommende planlagte jobs</td></tr>`;
-        $("plannedMsg").textContent = "";
-        return;
-      }
-
-      $("plannedTbody").innerHTML = planned.map(j => `
-        <tr>
-          <td>${escapeHtml(j.job_date)}</td>
-          <td>${escapeHtml(j.client || "")}</td>
-          <td><span class="pill">${escapeHtml(j.category_name || "(Ingen)")}</span></td>
-          <td><span class="pill plan">Planlagt</span></td>
-          <td>
-            <button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Udfyld</button>
-          </td>
-        </tr>
-      `).join("");
-
-      document.querySelectorAll("#plannedTbody button[data-edit]").forEach(btn => {
-        btn.addEventListener("click", () => openEdit(btn.getAttribute("data-edit")));
-      });
-
-      $("plannedMsg").textContent = "Tip: klik “Udfyld” for at tilføje tid/beløb og få status til at opdatere automatisk.";
     }
 
     function renderAll(){
@@ -928,6 +821,7 @@
       for (const j of filtered) {
         const ex = Number(j.invoice_amount_ex_vat || 0);
         const incl = inclVat(ex);
+        const hasEx = j.invoice_amount_ex_vat !== null && j.invoice_amount_ex_vat !== undefined && String(j.invoice_amount_ex_vat) !== "";
         lines.push([
           esc(j.id),
           esc(j.status),
@@ -938,8 +832,8 @@
           esc(j.work_minutes),
           esc(j.work_text),
           esc(j.travel_minutes),
-          esc(ex ? ex.toFixed(2) : ""),
-          esc(ex ? incl.toFixed(2) : ""),
+          esc(hasEx ? Number(ex).toFixed(2) : ""),
+          esc(hasEx ? incl.toFixed(2) : ""),
           esc(j.notes),
         ].join(","));
       }
@@ -955,123 +849,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // ---------------- REPORT (monthly per client) ----------------
-    function setSelectOptions(selectEl, values, placeholder = "(Alle)") {
-      const opts = values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
-      selectEl.innerHTML = `<option value="">${placeholder}</option>` + opts;
-    }
-
-    async function loadReportRows(){
-      $("reportMsg").textContent = "Henter rapport…";
-
-      const { data, error } = await supabase
-        .from("v_monthly_client_report")
-        .select("ym,client,jobs,work_minutes,travel_minutes,invoice_ex_vat")
-        .eq("user_id", user.id)
-        .order("ym", { ascending: false })
-        .order("client", { ascending: true });
-
-      if (error) {
-        $("reportMsg").textContent = `Fejl: ${error.message}`;
-        reportRows = [];
-        renderReport();
-        return;
-      }
-
-      reportRows = data ?? [];
-      $("reportMsg").textContent = "";
-
-      const months = Array.from(new Set(reportRows.map(r => r.ym))).sort((a,b)=>b.localeCompare(a));
-      const clients = Array.from(new Set(reportRows.map(r => r.client))).sort((a,b)=>a.localeCompare(b));
-
-      setSelectOptions($("reportMonth"), months, "(Alle måneder)");
-      setSelectOptions($("reportClient"), clients, "(Alle kunder)");
-
-      if (!$("reportMonth").dataset.initialized) {
-        $("reportMonth").value = months[0] || "";
-        $("reportMonth").dataset.initialized = "1";
-      }
-
-      renderReport();
-    }
-
-    function getFilteredReportRows(){
-      const m = $("reportMonth").value;
-      const c = $("reportClient").value;
-
-      return reportRows.filter(r => {
-        if (m && r.ym !== m) return false;
-        if (c && r.client !== c) return false;
-        return true;
-      });
-    }
-
-    function renderReport(){
-      const rows = getFilteredReportRows();
-
-      if (!rows.length) {
-        $("reportTbody").innerHTML = `<tr><td colspan="6" class="muted">Ingen rapport-data for det valg</td></tr>`;
-        return;
-      }
-
-      $("reportTbody").innerHTML = rows.map(r => {
-        const ex = Number(r.invoice_ex_vat || 0);
-        const incl = inclVat(ex);
-        return `
-          <tr>
-            <td>${escapeHtml(r.ym)}</td>
-            <td>${escapeHtml(r.client)}</td>
-            <td>${Number(r.jobs || 0)}</td>
-            <td>${fmtH(r.work_minutes || 0)}</td>
-            <td>${fmtH(r.travel_minutes || 0)}</td>
-            <td>
-              ${ex.toFixed(2)}<br>
-              <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
-            </td>
-          </tr>
-        `;
-      }).join("");
-    }
-
-    function exportReportCSV(){
-      const rows = getFilteredReportRows();
-
-      const header = ["Måned","Kunde","Jobs","WorkMin","WorkTimer","TransportMin","TransportTimer","FaktureringExMoms","FaktureringInclMoms"];
-      const lines = [header.join(",")];
-
-      const esc = (s) => {
-        const str = String(s ?? "");
-        return /[,"\n]/.test(str) ? `"${str.replace(/"/g,'""')}"` : str;
-      };
-
-      for (const r of rows) {
-        const ex = Number(r.invoice_ex_vat || 0);
-        const incl = inclVat(ex);
-        lines.push([
-          esc(r.ym),
-          esc(r.client),
-          esc(r.jobs),
-          esc(r.work_minutes),
-          esc(fmtH(r.work_minutes)),
-          esc(r.travel_minutes),
-          esc(fmtH(r.travel_minutes)),
-          esc(ex.toFixed(2)),
-          esc(incl.toFixed(2)),
-        ].join(","));
-      }
-
-      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `rsadm_report_${todayISO()}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-    // -------------------------------------------------------------
-
     // AUTH
     async function checkSession(){
       const { data } = await supabase.auth.getSession();
@@ -1086,7 +863,6 @@
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
-        await loadReportRows();
       }
     }
 
@@ -1108,7 +884,6 @@
       await loadCategories();
       await ensureDefaultCategories();
       await loadJobs();
-      await loadReportRows();
     });
 
     $("signupBtn").addEventListener("click", async () => {
@@ -1127,7 +902,6 @@
       user = null;
       categories = [];
       jobs = [];
-      reportRows = [];
       setLoggedInUI(false);
     });
 
@@ -1146,15 +920,15 @@
       renderAll();
     });
 
-    // Create job
+    // Create job (MANUEL STATUS)
     $("createJobBtn").addEventListener("click", async () => {
       $("jobMsg").textContent = "";
 
-      const invoice_no = $("invoiceNo").value.trim();
+      const invoice_no = $("invoiceNo").value.trim() || null;
       const job_date = $("jobDate").value || todayISO();
       const category_id = $("categorySelect").value || null;
       const client = $("client").value.trim();
-      const chosenStatus = $("statusSelect").value;
+      const status = $("statusSelect").value;
 
       if (!client) { $("jobMsg").textContent = "Skriv en kunde."; return; }
 
@@ -1165,28 +939,20 @@
       const invoice_amount_ex_vat = $("invoiceExVat").value === "" ? null : Number($("invoiceExVat").value);
       const notes = $("notes").value.trim() || null;
 
-      const nextStatus = autoStatusFromFields({
-        chosenStatus,
-        work_minutes,
-        invoice_no,
-        invoice_amount_ex_vat,
-        forcePaid: false
-      });
-
-      const stamps = stampsForStatus(nextStatus);
+      const stamps = addStatusStampsPreserve(null, status);
 
       const { error } = await supabase.from("jobs").insert({
         user_id: user.id,
-        invoice_no: (nextStatus === "planned") ? "" : invoice_no,
+        invoice_no,
         job_date,
         category_id,
         client,
-        work_minutes: (nextStatus === "planned") ? 0 : work_minutes,
-        work_text: (nextStatus === "planned") ? "" : work_text,
-        travel_minutes: (nextStatus === "planned") ? 0 : travel_minutes,
-        invoice_amount_ex_vat: (nextStatus === "planned") ? null : invoice_amount_ex_vat,
+        work_minutes,
+        work_text,
+        travel_minutes,
+        invoice_amount_ex_vat,
         notes,
-        status: nextStatus,
+        status,
         ...stamps
       });
 
@@ -1195,7 +961,6 @@
       $("jobMsg").textContent = "Job gemt ✅";
       resetJobForm();
       await loadJobs();
-      await loadReportRows();
     });
 
     function resetJobForm(){
@@ -1234,6 +999,7 @@
       $("editNotes").value = j.notes ?? "";
 
       applyEditStatusUI();
+      updateEditInvoicePreview();
       $("editMsg").textContent = "";
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     }
@@ -1243,49 +1009,46 @@
       $("editCard").classList.add("hidden");
     });
 
+    // Save edit (MANUEL STATUS)
     $("saveEditBtn").addEventListener("click", async () => {
       if (!editingId) return;
       $("editMsg").textContent = "";
 
-      const chosenStatus = $("editStatusSelect").value;
+      const j = jobs.find(x => x.id === editingId);
+      if (!j) { $("editMsg").textContent = "Kunne ikke finde job i listen."; return; }
+
+      const status = $("editStatusSelect").value;
 
       const work_text = $("editWorkText").value.trim();
       const work_minutes = parseWorkMinutes(work_text);
 
-      const invoice_no = $("editInvoiceNo").value.trim();
-      const invoice_amount_ex_vat = $("editInvoiceExVat").value === "" ? null : Number($("editInvoiceExVat").value);
-
-      const nextStatus = autoStatusFromFields({
-        chosenStatus,
-        work_minutes,
-        invoice_no,
-        invoice_amount_ex_vat,
-        forcePaid: (chosenStatus === "paid")
-      });
-
-      const stamps = stampsForStatus(nextStatus);
-
       const patch = {
-        status: nextStatus,
-        ...stamps,
+        status,
+        ...addStatusStampsPreserve({
+          completed_at: j.completed_at,
+          invoiced_at: j.invoiced_at,
+          paid_at: j.paid_at,
+          canceled_at: j.canceled_at
+        }, status),
 
-        invoice_no: (nextStatus === "planned") ? "" : invoice_no,
+        invoice_no: $("editInvoiceNo").value.trim() || null,
         job_date: $("editJobDate").value || todayISO(),
         category_id: $("editCategorySelect").value || null,
         client: $("editClient").value.trim(),
-        work_text: (nextStatus === "planned") ? "" : work_text,
-        work_minutes: (nextStatus === "planned") ? 0 : work_minutes,
-        travel_minutes: (nextStatus === "planned") ? 0 : Math.max(0, Number($("editTravelMinutes").value || 0)),
-        invoice_amount_ex_vat: (nextStatus === "planned") ? null : invoice_amount_ex_vat,
+        work_text,
+        work_minutes,
+        travel_minutes: Math.max(0, Number($("editTravelMinutes").value || 0)),
+        invoice_amount_ex_vat: $("editInvoiceExVat").value === "" ? null : Number($("editInvoiceExVat").value),
         notes: $("editNotes").value.trim() || null
       };
+
+      if (!patch.client) { $("editMsg").textContent = "Kunde må ikke være tom."; return; }
 
       const { error } = await supabase.from("jobs").update(patch).eq("id", editingId);
       if (error) { $("editMsg").textContent = error.message; return; }
 
       $("editMsg").textContent = "Rettet ✅";
       await loadJobs();
-      await loadReportRows();
       $("editCard").classList.add("hidden");
       editingId = null;
     });
@@ -1298,29 +1061,21 @@
       if (error) { $("editMsg").textContent = error.message; return; }
 
       await loadJobs();
-      await loadReportRows();
       $("editCard").classList.add("hidden");
       editingId = null;
     });
 
     // Filters & actions
-    $("refreshBtn").addEventListener("click", async () => { await loadJobs(); await loadReportRows(); });
+    $("refreshBtn").addEventListener("click", async () => { await loadJobs(); });
     $("search").addEventListener("input", renderAll);
     $("yearFilter").addEventListener("change", renderAll);
     $("statusFilter").addEventListener("change", renderAll);
 
     $("exportBtn").addEventListener("click", () => {
-      const filtered = filterJobs();
-      exportCSV(filtered);
+      exportCSV(filterJobs());
     });
 
-    // Report actions
-    $("reportRefreshBtn").addEventListener("click", loadReportRows);
-    $("reportExportBtn").addEventListener("click", exportReportCSV);
-    $("reportMonth").addEventListener("change", renderReport);
-    $("reportClient").addEventListener("change", renderReport);
-
-    // Invoice previews + status UI
+    // UI events
     $("invoiceExVat").addEventListener("input", updateNewInvoicePreview);
     $("editInvoiceExVat").addEventListener("input", updateEditInvoicePreview);
     $("statusSelect").addEventListener("change", applyNewStatusUI);
@@ -1340,7 +1095,6 @@
         await loadCategories();
         await ensureDefaultCategories();
         await loadJobs();
-        await loadReportRows();
       }
     });
   </script>
