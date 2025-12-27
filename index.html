@@ -2,177 +2,290 @@
 <html lang="da">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>RSADM – Job/Faktura tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RSADM – Job & Faktura Overblik</title>
 
   <style>
     :root{
-      --bg:#0b1220;
-      --card:#111b2e;
-      --muted:#9fb0d0;
-      --text:#e8efff;
-      --line:rgba(255,255,255,.10);
-      --pri:#6ea8ff;
-      --pri2:#3b82f6;
-      --good:#22c55e;
-      --warn:#f59e0b;
-      --bad:#ef4444;
-      --shadow: 0 16px 40px rgba(0,0,0,.35);
-      --radius:18px;
+      --maxw: 1200px;
+      --pad: 18px;
+
+      /* RSFOTO vibe */
+      --bg0:#07080b;
+      --bg1:#0b0f17;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.04);
+      --line: rgba(255,255,255,.10);
+
+      --text:#eef2ff;
+      --muted:#a8b2c6;
+      --muted2:#7f8aa3;
+
+      /* Orange fra logo */
+      --accent:#ff5a18;
+      --accent2:#ff7a3d;
+
+      --danger:#ef4444;
+      --shadow: 0 18px 50px rgba(0,0,0,.45);
+      --radius: 18px;
     }
-    *{box-sizing:border-box}
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+
     body{
       margin:0;
-      font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 30% 10%, rgba(110,168,255,.25), transparent 60%),
-                  radial-gradient(900px 600px at 90% 20%, rgba(34,197,94,.18), transparent 55%),
-                  var(--bg);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       color:var(--text);
+      background:
+        radial-gradient(900px 600px at 18% 10%, rgba(255,90,24,.22), transparent 55%),
+        radial-gradient(800px 500px at 85% 18%, rgba(255,255,255,.08), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
     }
-    a{color:inherit; text-decoration:none}
-    .wrap{max-width:1120px; margin:0 auto; padding:18px}
+
+    .wrap{
+      max-width: var(--maxw);
+      margin: 18px auto;
+      padding: 0 var(--pad);
+    }
+
+    h1{ margin:0; font-size:18px; letter-spacing:.2px; }
+    h2{ margin:0; font-size:15px; letter-spacing:.2px; }
+    h3{ margin:0; font-size:13px; color: var(--muted); font-weight:700; }
+
+    .muted{ color: var(--muted); margin: 6px 0 0; }
+    .small{ font-size:12px; color: var(--muted2); }
+    .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+    .hidden{ display:none !important; }
+
+    /* Topbar */
     .topbar{
-      display:flex; gap:12px; align-items:center; justify-content:space-between;
-      padding:14px 14px;
-      border:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding: 14px 14px;
+      border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: rgba(17,27,46,.75);
-      backdrop-filter: blur(10px);
+      background: rgba(10,12,18,.70);
+      backdrop-filter: blur(12px);
       box-shadow: var(--shadow);
-      position: sticky; top: 12px; z-index: 5;
+      position: sticky;
+      top: 12px;
+      z-index: 5;
     }
-    .brand{display:flex; gap:10px; align-items:center}
-    .logo{
-      width:34px; height:34px; border-radius:12px;
-      background: linear-gradient(135deg, var(--pri2), #8b5cf6);
-      box-shadow: 0 10px 22px rgba(59,130,246,.25);
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 0;
     }
-    .brand h1{font-size:16px; margin:0}
-    .muted{color:var(--muted)}
-    .row{display:flex; gap:12px; flex-wrap:wrap}
-    .grid{display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px}
+
+    .brand img{
+      height: 44px;
+      width: auto;
+      border-radius: 14px;
+      object-fit: contain;
+      background: rgba(255,255,255,.06);
+      padding: 6px;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 14px 28px rgba(0,0,0,.35);
+    }
+
+    .brand .titles{ min-width:0; }
+    .brand .titles .sub{ margin-top:2px; color: var(--muted); font-size:12px; }
+
+    .topbar .right{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+
+    /* Cards */
     .card{
-      margin-top:14px;
-      background: rgba(17,27,46,.78);
-      border:1px solid var(--line);
+      margin-top: 14px;
+      border: 1px solid var(--line);
       border-radius: var(--radius);
-      padding:16px;
+      padding: 16px;
+      background: linear-gradient(180deg, var(--card), var(--card2));
       box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
     }
-    h2{font-size:16px; margin:0 0 6px 0}
-    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px 0}
-    input,select,textarea{
-      width:100%;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(8,13,24,.65);
-      color:var(--text);
-      outline:none;
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
     }
-    textarea{min-height:90px; resize:vertical}
-    input:focus,select:focus,textarea:focus{border-color: rgba(110,168,255,.55)}
+
+    .row{
+      display:flex;
+      gap: 10px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    label{
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 6px;
+    }
+
+    input, select, textarea{
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(5,7,10,.55);
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+    textarea{ min-height: 90px; resize: vertical; }
+
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(255,90,24,.65);
+      box-shadow: 0 0 0 3px rgba(255,90,24,.15);
+    }
+
+    /* Buttons */
     button{
       width:auto;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(135deg, var(--pri2), var(--pri));
-      color: #061021;
-      font-weight:700;
-      cursor:pointer;
-      box-shadow: 0 10px 22px rgba(59,130,246,.20);
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #140a06;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 800;
+      box-shadow: 0 14px 28px rgba(255,90,24,.15);
     }
+
     button.secondary{
       background: rgba(255,255,255,.08);
       color: var(--text);
-      box-shadow:none;
+      box-shadow: none;
     }
+
     button.danger{
-      background: rgba(239,68,68,.15);
+      background: rgba(239,68,68,.18);
       color: #ffd7d7;
       border-color: rgba(239,68,68,.35);
       box-shadow:none;
     }
-    .hidden{display:none !important}
-    .small{font-size:12px}
-    .mono{font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
 
-    table{
-      width:100%;
-      border-collapse: collapse;
-      margin-top:12px;
-      overflow:hidden;
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    /* Link button */
+    .linkbtn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 14px;
       border-radius: 14px;
-      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.14);
+      text-decoration:none;
+      font-size: 14px;
+      line-height: 1;
     }
-    th,td{
-      text-align:left;
-      padding:10px 10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      vertical-align: top;
-      font-size:13px;
-    }
-    th{color:#cfe0ff; font-size:12px; letter-spacing:.02em; background: rgba(0,0,0,.20)}
-    tr:hover td{background: rgba(255,255,255,.03)}
+    .linkbtn:hover{ border-color: rgba(255,90,24,.45); }
 
+    /* Tables */
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td{
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 10px 8px;
+      font-size: 13px;
+      text-align:left;
+      vertical-align: top;
+    }
+
+    th{
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      background: rgba(0,0,0,.22);
+    }
+
+    tr:hover td{ background: rgba(255,255,255,.03); }
+
+    /* Badges */
     .badge{
       display:inline-flex;
       align-items:center;
       gap:6px;
-      padding:4px 10px;
-      border-radius:999px;
-      font-size:12px;
-      border:1px solid rgba(255,255,255,.14);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,.14);
       background: rgba(255,255,255,.06);
       color: var(--text);
-      white-space: nowrap;
     }
-    .b-draft{border-color:rgba(148,163,184,.35)}
-    .b-ready{border-color:rgba(245,158,11,.35); background: rgba(245,158,11,.12)}
-    .b-invoiced{border-color:rgba(59,130,246,.35); background: rgba(59,130,246,.12)}
-    .b-paid{border-color:rgba(34,197,94,.35); background: rgba(34,197,94,.12)}
+    .b-draft{ border-color:rgba(148,163,184,.35); }
+    .b-ready{ border-color:rgba(255,90,24,.45); background: rgba(255,90,24,.10); }
+    .b-invoiced{ border-color:rgba(59,130,246,.45); background: rgba(59,130,246,.10); }
+    .b-paid{ border-color:rgba(34,197,94,.45); background: rgba(34,197,94,.10); }
+    .b-planned{ border-color:rgba(245,158,11,.45); background: rgba(245,158,11,.10); }
 
-    .kpis{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; margin-top:12px}
-    .kpi{
-      padding:12px; border-radius:16px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
+    /* Totals */
+    .totals{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
     }
-    .kpi .v{font-size:20px; font-weight:800}
-    .kpi .l{font-size:12px; color: var(--muted)}
+    .stat{
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255,255,255,.05);
+    }
+    .stat .k{ font-size: 12px; color: var(--muted2); }
+    .stat .v{ font-size: 20px; font-weight: 900; letter-spacing:.2px; }
 
     @media (max-width: 900px){
-      .grid{grid-template-columns: 1fr}
-      .kpis{grid-template-columns: 1fr 1fr}
-      .topbar{position: static}
-    }
-    @media (max-width: 520px){
-      .kpis{grid-template-columns: 1fr}
+      .grid{ grid-template-columns: 1fr; }
+      .totals{ grid-template-columns: 1fr; }
+      .topbar{ flex-direction: column; align-items: flex-start; position: static; }
+      .topbar .right{ justify-content:flex-start; }
+      .brand img{ height: 40px; }
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
+
     <div class="topbar">
       <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
+        <!-- Dit logo i repo: assets/Rsfoto logo_sort.png -->
+        <img src="assets/Rsfoto%20logo_sort.png" alt="RSFOTO" />
+        <div class="titles">
           <h1>RSADM</h1>
-          <div class="small muted">Fotograf job/faktura tracker</div>
+          <div class="sub">Job & faktura overblik</div>
         </div>
       </div>
 
-      <div class="row" style="align-items:center; justify-content:flex-end;">
-        <span id="whoami" class="small muted"></span>
-
-        <a href="stats.html" id="statsLink" class="hidden">
-          <button class="secondary" type="button">📊 Statistik</button>
-        </a>
-
-        <button id="logoutBtn" class="secondary hidden" type="button">Log ud</button>
+      <div class="right">
+        <a class="linkbtn hidden" href="stats.html" id="statsLink">📊 Statistik</a>
+        <div id="whoami" class="small"></div>
+        <button id="logoutBtn" type="button" class="secondary hidden">Log ud</button>
       </div>
     </div>
 
@@ -197,9 +310,7 @@
       </div>
 
       <p id="loginMsg" class="muted"></p>
-      <p class="small muted" style="margin-top:0;">
-        Tip: Hvis du får “permission denied”, så tjek RLS policies på dine tabeller.
-      </p>
+      <p class="small muted" style="margin-top:0;">Tip: Hvis du får “permission denied”, så tjek RLS policies.</p>
     </div>
 
     <!-- APP -->
@@ -232,7 +343,7 @@
         </table>
 
         <p class="muted" id="clientMsg"></p>
-        <p class="small muted">Tip: Hvis sletning fejler, er kunden nok i brug af et job (FK). (Vi kan lave “arkivér” senere.)</p>
+        <p class="small muted">Tip: Hvis sletning fejler, er kunden nok i brug af et job (FK). Så lav i stedet “arkivér” senere.</p>
       </div>
 
       <!-- Categories -->
@@ -240,11 +351,11 @@
         <h2>Kategorier</h2>
 
         <div class="row" style="margin-top:12px;">
-          <div style="flex:1 1 320px;">
+          <div style="flex:1 1 300px;">
             <label>Ny kategori</label>
             <input id="newCategory" placeholder="fx Fodbold / Håndbold / Klub / Motorsport" />
           </div>
-          <div style="display:flex; align-items:flex-end; flex:0 0 auto;">
+          <div style="display:flex; align-items:flex-end;">
             <button id="addCategoryBtn" type="button">Tilføj kategori</button>
           </div>
         </div>
@@ -255,9 +366,7 @@
         </table>
 
         <p class="muted" id="catMsg"></p>
-        <p class="small muted" style="margin-top:0;">
-          Ved sletning: jobs der bruger kategorien får sat kategori til <span class="mono">NULL</span> og derefter slettes kategorien.
-        </p>
+        <p class="small muted" style="margin-top:0;">Ved sletning: jobs der bruger kategorien sættes til <span class="mono">NULL</span>, og så slettes kategorien.</p>
       </div>
 
       <!-- New job -->
@@ -283,8 +392,8 @@
             <label>Status</label>
             <select id="statusSelect">
               <option value="draft">draft</option>
-              <option value="ready">ready</option>
               <option value="planned">planned</option>
+              <option value="ready">ready</option>
               <option value="invoiced">invoiced</option>
               <option value="paid">paid</option>
             </select>
@@ -302,12 +411,12 @@
           </div>
 
           <div>
-            <label>Tid brugt (minutter / 1:30 / 2t 15m)</label>
+            <label>Tid brugt (min / 1:30 / 2t 15m)</label>
             <input id="workText" placeholder="fx 2:15" />
           </div>
 
           <div>
-            <label>Transport total (minutter)</label>
+            <label>Transport total (min)</label>
             <input id="travelMinutes" type="number" min="0" step="1" placeholder="fx 90" />
           </div>
 
@@ -316,12 +425,10 @@
             <input id="invoiceExVat" type="number" min="0" step="0.01" placeholder="fx 2000.00" />
             <div class="small muted" id="invoiceInclPreview" style="margin-top:6px;"></div>
 
-            <div class="row" style="margin-top:10px; gap:10px;">
-              <label style="display:flex; align-items:center; gap:10px; margin:0;">
-                <input id="autoCalcAmount" type="checkbox" checked style="width:auto; transform: translateY(1px);" />
-                Beregn beløb automatisk (tid × timepris)
-              </label>
-            </div>
+            <label style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+              <input id="autoCalcAmount" type="checkbox" checked style="width:auto; transform: translateY(1px);" />
+              Beregn beløb automatisk
+            </label>
             <div class="small muted" id="autoCalcHint" style="margin-top:6px;"></div>
           </div>
 
@@ -358,8 +465,8 @@
               <select id="statusFilter">
                 <option value="">Alle</option>
                 <option value="draft">draft</option>
-                <option value="ready">ready</option>
                 <option value="planned">planned</option>
+                <option value="ready">ready</option>
                 <option value="invoiced">invoiced</option>
                 <option value="paid">paid</option>
               </select>
@@ -372,11 +479,11 @@
           </div>
         </div>
 
-        <div class="kpis">
-          <div class="kpi"><div class="v" id="kpiJobs">0</div><div class="l">Jobs</div></div>
-          <div class="kpi"><div class="v" id="kpiWork">0:00</div><div class="l">Arbejdstid</div></div>
-          <div class="kpi"><div class="v" id="kpiTravel">0:00</div><div class="l">Transport</div></div>
-          <div class="kpi"><div class="v" id="kpiInv">0.00</div><div class="l">Fakturering ex. moms</div></div>
+        <div class="totals">
+          <div class="stat"><div class="k">Jobs</div><div id="kpiJobs" class="v">0</div></div>
+          <div class="stat"><div class="k">Arbejdstid</div><div id="kpiWork" class="v">0:00</div></div>
+          <div class="stat"><div class="k">Transport</div><div id="kpiTravel" class="v">0:00</div></div>
+          <div class="stat"><div class="k">Fakturering ex. moms</div><div id="kpiInv" class="v">0.00</div></div>
         </div>
 
         <table>
@@ -429,7 +536,7 @@
               <th>Jobs</th>
               <th>Arbejdstid</th>
               <th>Transport</th>
-              <th>Fakturering</th>
+              <th>Fakturering ex. moms</th>
             </tr>
           </thead>
           <tbody id="reportTbody"></tbody>
@@ -461,8 +568,8 @@
             <label>Status</label>
             <select id="editStatusSelect">
               <option value="draft">draft</option>
-              <option value="ready">ready</option>
               <option value="planned">planned</option>
+              <option value="ready">ready</option>
               <option value="invoiced">invoiced</option>
               <option value="paid">paid</option>
             </select>
@@ -483,7 +590,6 @@
             <label>Tid brugt (tekst)</label>
             <input id="editWorkText" />
           </div>
-
           <div>
             <label>Transport total (min)</label>
             <input id="editTravelMinutes" type="number" min="0" step="1" />
@@ -508,26 +614,35 @@
         </div>
 
         <div class="row" style="margin-top:12px;">
-          <button id="saveEditBtn" type="button">Gem ændringer</button>
+          <button id="saveEditBtn" type="button">Gem rettelse</button>
           <button id="cancelEditBtn" type="button" class="secondary">Annuller</button>
           <button id="deleteJobBtn" type="button" class="danger">Slet job</button>
         </div>
 
-        <p class="muted" id="editMsg"></p>
+        <p id="editMsg" class="muted"></p>
       </div>
-    </div>
-  </div>
+
+    </div><!-- /#app -->
+  </div><!-- /.wrap -->
 
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    // ------------------ SUPABASE ------------------
     const SUPABASE_URL = "https://epzbdezmbyyduqjthdzt.supabase.co";
-    const SUPABASE_ANON_KEY = "SUPABASE_ANON_KEY_HERE"; // <-- indsæt din anon key
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwemJkZXptYnl5ZHVxanRoZHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDU3MzAsImV4cCI6MjA4MjA4MTczMH0.d_-8frGdHnvBO6smGThEUI81KUWI39rp5VX65O_HauU";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // --------------------------------------------
 
     const $ = (id) => document.getElementById(id);
+
+    const VAT_RATE = 0.25;
+    const inclVat = (exVat) => Math.round((Number(exVat)||0) * (1 + VAT_RATE) * 100) / 100;
+
+    const fmtH = (mins) => {
+      const m = Math.max(0, Math.round(Number(mins)||0));
+      const h = Math.floor(m/60);
+      const r = m%60;
+      return `${h}:${String(r).padStart(2,'0')}`;
+    };
 
     function todayISO(){
       const d = new Date();
@@ -543,6 +658,7 @@
       }[c]));
     }
 
+    // Parse work text -> minutes
     function parseWorkMinutes(input){
       const s = String(input ?? "").trim().toLowerCase();
       if (!s) return 0;
@@ -561,16 +677,15 @@
       return total;
     }
 
-    function fmtH(mins){
-      const m = Math.max(0, Number(mins || 0));
-      const h = Math.floor(m / 60);
-      const mm = String(m % 60).padStart(2,"0");
-      return `${h}:${mm}`;
-    }
-
-    function inclVat(ex){
-      const n = Number(ex || 0);
-      return n * 1.25;
+    function statusBadge(status){
+      const s = String(status || "draft");
+      const cls =
+        s === "planned" ? "b-planned" :
+        s === "ready" ? "b-ready" :
+        s === "invoiced" ? "b-invoiced" :
+        s === "paid" ? "b-paid" :
+        "b-draft";
+      return `<span class="badge ${cls}">${escapeHtml(s)}</span>`;
     }
 
     function round2(n){
@@ -578,30 +693,21 @@
       return Math.round(x * 100) / 100;
     }
 
-    function statusBadge(status){
-      const s = String(status || "draft");
-      const cls =
-        s === "ready" ? "b-ready" :
-        s === "planned" ? "b-ready" :
-        s === "invoiced" ? "b-invoiced" :
-        s === "paid" ? "b-paid" :
-        "b-draft";
-      return `<span class="badge ${cls}">${escapeHtml(s)}</span>`;
-    }
-
-    // ------------------ STATE ------------------
+    // State
     let user = null;
     let categories = [];
     let clients = [];
     let jobs = [];
-    let reportRows = [];
     let editingId = null;
+
+    // REPORT STATE
+    let reportRows = [];
 
     function setLoggedInUI(isIn){
       $("loginCard").classList.toggle("hidden", isIn);
       $("app").classList.toggle("hidden", !isIn);
       $("logoutBtn").classList.toggle("hidden", !isIn);
-      $("statsLink")?.classList.toggle("hidden", !isIn);
+      $("statsLink").classList.toggle("hidden", !isIn);
       $("whoami").textContent = isIn ? `Logget ind: ${user?.email ?? ""}` : "";
     }
 
@@ -620,16 +726,34 @@
       return clients.find(c => c.id === id) || null;
     }
 
+    function renderClientSelects(){
+      const opts = clients
+        .slice()
+        .sort((a,b)=> String(a.name||"").localeCompare(String(b.name||"")))
+        .map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}${c.hourly_rate != null ? ` (${Number(c.hourly_rate).toFixed(2)}/t)` : ""}</option>`)
+        .join("");
+
+      const base = `<option value="">(Manuel)</option>` + opts;
+
+      $("clientSelect").innerHTML = base;
+      $("editClientSelect").innerHTML = base;
+
+      updateClientManualVisibility();
+      updateEditClientManualVisibility();
+      updateClientRateHints();
+      updateEditClientRateHints();
+      maybeAutoCalcNewAmount();
+      maybeAutoCalcEditAmount();
+    }
+
     function updateClientManualVisibility(){
-      const id = $("clientSelect").value || "";
-      $("clientManualWrap").classList.toggle("hidden", !!id);
-      if (id) $("clientManual").value = "";
+      const isManual = !$("clientSelect").value;
+      $("clientManualWrap").classList.toggle("hidden", !isManual);
     }
 
     function updateEditClientManualVisibility(){
-      const id = $("editClientSelect").value || "";
-      $("editClientManualWrap").classList.toggle("hidden", !!id);
-      if (id) $("editClientManual").value = "";
+      const isManual = !$("editClientSelect").value;
+      $("editClientManualWrap").classList.toggle("hidden", !isManual);
     }
 
     function updateClientRateHints(){
@@ -653,7 +777,7 @@
         return;
       }
       const amount = round2((mins / 60) * Number(c.hourly_rate));
-      $("invoiceExVat").value = mins ? amount.toFixed(2) : "";
+      $("invoiceExVat").value = amount ? amount.toFixed(2) : "";
       $("autoCalcHint").textContent = mins ? `Auto: ${fmtH(mins)} × ${Number(c.hourly_rate).toFixed(2)} = ${amount.toFixed(2)} kr ex. moms` : "Skriv tid for at beregne beløb.";
       updateNewInvoicePreview();
     }
@@ -669,21 +793,12 @@
         return;
       }
       const amount = round2((mins / 60) * Number(c.hourly_rate));
-      $("editInvoiceExVat").value = mins ? amount.toFixed(2) : "";
+      $("editInvoiceExVat").value = amount ? amount.toFixed(2) : "";
       $("editAutoCalcHint").textContent = mins ? `Auto: ${fmtH(mins)} × ${Number(c.hourly_rate).toFixed(2)} = ${amount.toFixed(2)} kr ex. moms` : "Skriv tid for at beregne beløb.";
       updateEditInvoicePreview();
     }
 
-    // ------------------ CATEGORIES ------------------
-    async function ensureDefaultCategories(){
-      if (categories.length) return;
-      const starter = ["Fodbold","Håndbold","Klub","Motorsport","Event","Bryllup","Studio"];
-      const inserts = starter.map(name => ({ user_id: user.id, name }));
-      const { error } = await supabase.from("categories").insert(inserts);
-      if (error) console.warn(error);
-      await loadCategories();
-    }
-
+    // -------- CATEGORIES --------
     async function loadCategories(){
       const { data, error } = await supabase
         .from("categories")
@@ -704,8 +819,17 @@
       renderCategoriesTable();
     }
 
+    async function ensureDefaultCategories(){
+      if (categories.length) return;
+      const starter = ["Fodbold","Håndbold","Klub","Motorsport","Event","Bryllup","Studio"];
+      const inserts = starter.map(name => ({ user_id: user.id, name }));
+      const { error } = await supabase.from("categories").insert(inserts);
+      if (error) console.warn(error);
+      await loadCategories();
+    }
+
     function renderCategorySelects(){
-      const opts = (categories || []).map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
+      const opts = categories.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
       $("categorySelect").innerHTML = `<option value="">(Vælg)</option>` + opts;
       $("editCategorySelect").innerHTML = `<option value="">(Vælg)</option>` + opts;
     }
@@ -725,15 +849,13 @@
 
     async function deleteCategory(id){
       if (!id) return;
-
       const cat = categories.find(c => c.id === id);
       const name = cat?.name || "kategorien";
-
       if (!confirm(`Slet "${name}"?\n\nOBS: Jobs der bruger kategorien får sat kategori til (Ingen).`)) return;
 
       $("catMsg").textContent = "";
 
-      // 1) frigør FK ved at sætte jobs.category_id = null
+      // frigør FK først
       const { error: jobsErr } = await supabase
         .from("jobs")
         .update({ category_id: null })
@@ -741,7 +863,6 @@
 
       if (jobsErr) { $("catMsg").textContent = `Fejl (jobs update): ${jobsErr.message}`; return; }
 
-      // 2) slet kategorien
       const { error: delErr } = await supabase
         .from("categories")
         .delete()
@@ -755,7 +876,7 @@
       await loadReportRows();
     }
 
-    // ------------------ CLIENTS ------------------
+    // -------- CLIENTS --------
     async function loadClients(){
       const { data, error } = await supabase
         .from("clients")
@@ -776,22 +897,14 @@
       renderClientsTable();
     }
 
-    function renderClientSelects(){
-      const opts = (clients || []).map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
-      $("clientSelect").innerHTML = `<option value="">(Vælg)</option>` + opts;
-      $("editClientSelect").innerHTML = `<option value="">(Vælg)</option>` + opts;
-      updateClientManualVisibility();
-      updateEditClientManualVisibility();
-      updateClientRateHints();
-      updateEditClientRateHints();
-    }
-
     function renderClientsTable(){
       $("clientsTbody").innerHTML = (clients || []).map(c => `
         <tr>
           <td>${escapeHtml(c.name)}</td>
           <td>${c.hourly_rate == null ? "" : Number(c.hourly_rate).toFixed(2)}</td>
-          <td><button type="button" class="secondary" data-del-client="${escapeHtml(c.id)}">Slet</button></td>
+          <td>
+            <button type="button" class="secondary" data-del-client="${escapeHtml(c.id)}">Slet</button>
+          </td>
         </tr>
       `).join("") || `<tr><td colspan="3" class="muted">Ingen kunder endnu</td></tr>`;
 
@@ -804,6 +917,7 @@
       if (!id) return;
       if (!confirm("Slet kunde? (kan fejle hvis kunden bruges af jobs)")) return;
 
+      $("clientMsg").textContent = "";
       const { error } = await supabase.from("clients").delete().eq("id", id);
       if (error) { $("clientMsg").textContent = error.message; return; }
 
@@ -813,7 +927,7 @@
       await loadReportRows();
     }
 
-    // ------------------ JOBS ------------------
+    // -------- JOBS --------
     async function loadJobs(){
       const { data, error } = await supabase
         .from("jobs")
@@ -847,23 +961,8 @@
       renderAll();
     }
 
-    function filterJobs(){
-      const q = ($("search").value || "").trim().toLowerCase();
-      const year = $("yearFilter").value || "";
-      const st = $("statusFilter").value || "";
-
-      return (jobs || []).filter(j => {
-        const s = `${j.client_name||""} ${j.invoice_no||""} ${j.notes||""}`.toLowerCase();
-        if (q && !s.includes(q)) return false;
-        if (year && String(j.job_date||"").slice(0,4) !== year) return false;
-        if (st && String(j.status||"") !== st) return false;
-        return true;
-      });
-    }
-
     function renderYearFilter(){
-      const years = Array.from(new Set((jobs||[]).map(j => String(j.job_date || "").slice(0,4)).filter(Boolean)))
-        .sort((a,b)=>b.localeCompare(a));
+      const years = Array.from(new Set(jobs.map(j => String(j.job_date || "").slice(0,4)).filter(Boolean))).sort((a,b)=>b.localeCompare(a));
       const cur = $("yearFilter").value;
       $("yearFilter").innerHTML = `<option value="">Alle</option>` + years.map(y=>`<option value="${y}">${y}</option>`).join("");
       if (years.includes(cur)) $("yearFilter").value = cur;
@@ -885,27 +984,45 @@
       $("kpiInv").textContent = Number(s.totalInvoiceEx).toFixed(2);
     }
 
-    function renderJobsTable(filtered){
-      $("jobsTbody").innerHTML = filtered.map(j => `
-        <tr>
-          <td class="mono">${escapeHtml(j.id)}</td>
-          <td>${escapeHtml(j.job_date || "")}</td>
-          <td>${statusBadge(j.status)}</td>
-          <td>${escapeHtml(j.client_name || "")}</td>
-          <td>${escapeHtml(j.category_name || "(Ingen)")}</td>
-          <td>${escapeHtml(j.invoice_no || "")}</td>
-          <td>${fmtH(j.work_minutes || 0)}<br><span class="small muted">${escapeHtml(j.work_text || "")}</span></td>
-          <td>${fmtH(j.travel_minutes || 0)}</td>
-          <td>
-            ${Number(j.invoice_amount_ex_vat || 0).toFixed(2)}<br>
-            <span class="small muted">(${inclVat(Number(j.invoice_amount_ex_vat||0)).toFixed(2)} inkl.)</span>
-          </td>
-          <td><button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button></td>
-        </tr>
-      `).join("") || `<tr><td colspan="10" class="muted">Ingen jobs matcher filter</td></tr>`;
+    function filterJobs(){
+      const q = ($("search").value || "").trim().toLowerCase();
+      const year = $("yearFilter").value || "";
+      const st = $("statusFilter").value || "";
 
-      document.querySelectorAll("button[data-edit]").forEach(b=>{
-        b.addEventListener("click", ()=>openEdit(b.getAttribute("data-edit")));
+      return jobs.filter(j => {
+        const hay = `${j.client_name||""} ${j.invoice_no||""} ${j.notes||""}`.toLowerCase();
+        if (q && !hay.includes(q)) return false;
+        if (year && String(j.job_date||"").slice(0,4) !== year) return false;
+        if (st && String(j.status||"") !== st) return false;
+        return true;
+      });
+    }
+
+    function renderJobsTable(filtered){
+      $("jobsTbody").innerHTML = filtered.map(j => {
+        const ex = Number(j.invoice_amount_ex_vat || 0);
+        const incl = inclVat(ex);
+        return `
+          <tr>
+            <td class="mono">${escapeHtml(j.id)}</td>
+            <td>${escapeHtml(j.job_date || "")}</td>
+            <td>${statusBadge(j.status)}</td>
+            <td>${escapeHtml(j.client_name || "")}</td>
+            <td>${escapeHtml(j.category_name || "(Ingen)")}</td>
+            <td>${escapeHtml(j.invoice_no || "")}</td>
+            <td>${fmtH(j.work_minutes || 0)}<br><span class="small muted">${escapeHtml(j.work_text || "")}</span></td>
+            <td>${fmtH(j.travel_minutes || 0)}</td>
+            <td>
+              ${ex.toFixed(2)}<br>
+              <span class="small muted">(${incl.toFixed(2)} inkl.)</span>
+            </td>
+            <td><button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button></td>
+          </tr>
+        `;
+      }).join("") || `<tr><td colspan="10" class="muted">Ingen jobs matcher filter</td></tr>`;
+
+      document.querySelectorAll("button[data-edit]").forEach(btn => {
+        btn.addEventListener("click", () => openEdit(btn.getAttribute("data-edit")));
       });
     }
 
@@ -914,128 +1031,6 @@
       const filtered = filterJobs();
       renderStats(filtered);
       renderJobsTable(filtered);
-    }
-
-    function resetJobForm(){
-      $("invoiceNo").value = "";
-      $("jobDate").value = todayISO();
-      $("categorySelect").value = "";
-      $("statusSelect").value = "draft";
-      $("clientSelect").value = "";
-      $("clientManual").value = "";
-      updateClientManualVisibility();
-      updateClientRateHints();
-      $("workText").value = "";
-      $("travelMinutes").value = "";
-      $("invoiceExVat").value = "";
-      $("invoiceInclPreview").textContent = "";
-      $("notes").value = "";
-      $("jobMsg").textContent = "";
-      $("autoCalcHint").textContent = "";
-    }
-
-    function openEdit(id){
-      const j = (jobs || []).find(x => String(x.id) === String(id));
-      if (!j) return;
-
-      editingId = j.id;
-      $("editCard").classList.remove("hidden");
-      $("editId").textContent = j.id;
-
-      $("editInvoiceNo").value = j.invoice_no ?? "";
-      $("editJobDate").value = j.job_date ?? todayISO();
-      $("editCategorySelect").value = j.category_id ?? "";
-      $("editStatusSelect").value = j.status ?? "draft";
-
-      $("editClientSelect").value = j.client_id ?? "";
-      $("editClientManual").value = (j.client_id ? "" : (j.client ?? ""));
-      updateEditClientManualVisibility();
-      updateEditClientRateHints();
-
-      $("editWorkText").value = j.work_text ?? "";
-      $("editTravelMinutes").value = j.travel_minutes ?? 0;
-      $("editInvoiceExVat").value = j.invoice_amount_ex_vat ?? "";
-      $("editNotes").value = j.notes ?? "";
-
-      updateEditInvoicePreview();
-      $("editMsg").textContent = "";
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-
-      maybeAutoCalcEditAmount();
-    }
-
-    // ------------------ REPORT ------------------
-    async function loadReportRows(){
-      $("reportMsg").textContent = "";
-      const { data, error } = await supabase
-        .from("v_monthly_client_report")
-        .select("ym,client,jobs,work_minutes,travel_minutes,invoice_ex_vat")
-        .eq("user_id", user.id)
-        .order("ym", { ascending:false })
-        .order("client", { ascending:true });
-
-      if (error) {
-        $("reportMsg").textContent = `Fejl ved hentning af rapport: ${error.message}`;
-        reportRows = [];
-        renderReportFilters();
-        renderReport();
-        return;
-      }
-
-      reportRows = data ?? [];
-      renderReportFilters();
-      renderReport();
-    }
-
-    function renderReportFilters(){
-      const months = Array.from(new Set((reportRows||[]).map(r=>r.ym).filter(Boolean))).sort((a,b)=>b.localeCompare(a));
-      const clientsU = Array.from(new Set((reportRows||[]).map(r=>r.client).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
-
-      const curM = $("reportMonth").value;
-      const curC = $("reportClient").value;
-
-      $("reportMonth").innerHTML = `<option value="">Alle</option>` + months.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
-      $("reportClient").innerHTML = `<option value="">Alle</option>` + clientsU.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-
-      if (months.includes(curM)) $("reportMonth").value = curM;
-      if (clientsU.includes(curC)) $("reportClient").value = curC;
-    }
-
-    function getFilteredReportRows(){
-      const m = $("reportMonth").value || "";
-      const c = $("reportClient").value || "";
-      return (reportRows||[]).filter(r=>{
-        if (m && r.ym !== m) return false;
-        if (c && r.client !== c) return false;
-        return true;
-      });
-    }
-
-    function renderReport(){
-      const rows = getFilteredReportRows();
-
-      if (!rows.length) {
-        $("reportTbody").innerHTML = `<tr><td colspan="6" class="muted">Ingen rapport-data for det valg</td></tr>`;
-        return;
-      }
-
-      $("reportTbody").innerHTML = rows.map(r => {
-        const ex = Number(r.invoice_ex_vat || 0);
-        const incl = inclVat(ex);
-        return `
-          <tr>
-            <td>${escapeHtml(r.ym)}</td>
-            <td>${escapeHtml(r.client)}</td>
-            <td>${Number(r.jobs || 0)}</td>
-            <td>${fmtH(r.work_minutes || 0)}</td>
-            <td>${fmtH(r.travel_minutes || 0)}</td>
-            <td>
-              ${ex.toFixed(2)}<br>
-              <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
-            </td>
-          </tr>
-        `;
-      }).join("");
     }
 
     function exportCSV(rows){
@@ -1079,8 +1074,87 @@
       URL.revokeObjectURL(url);
     }
 
+    // -------- REPORT --------
+    function setSelectOptions(selectEl, values, placeholder = "(Alle)"){
+      const opts = values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+      selectEl.innerHTML = `<option value="">${placeholder}</option>` + opts;
+    }
+
+    async function loadReportRows(){
+      $("reportMsg").textContent = "Henter rapport…";
+
+      const { data, error } = await supabase
+        .from("v_monthly_client_report")
+        .select("ym,client,jobs,work_minutes,travel_minutes,invoice_ex_vat")
+        .eq("user_id", user.id)
+        .order("ym", { ascending: false })
+        .order("client", { ascending: true });
+
+      if (error) {
+        $("reportMsg").textContent = `Fejl: ${error.message}`;
+        reportRows = [];
+        renderReport();
+        return;
+      }
+
+      reportRows = data ?? [];
+      $("reportMsg").textContent = "";
+
+      const months = Array.from(new Set(reportRows.map(r => r.ym))).sort((a,b)=>b.localeCompare(a));
+      const cl = Array.from(new Set(reportRows.map(r => r.client))).sort((a,b)=>a.localeCompare(b));
+
+      setSelectOptions($("reportMonth"), months, "(Alle måneder)");
+      setSelectOptions($("reportClient"), cl, "(Alle kunder)");
+
+      if (!$("reportMonth").dataset.initialized) {
+        $("reportMonth").value = months[0] || "";
+        $("reportMonth").dataset.initialized = "1";
+      }
+
+      renderReport();
+    }
+
+    function getFilteredReportRows(){
+      const m = $("reportMonth").value;
+      const c = $("reportClient").value;
+
+      return reportRows.filter(r => {
+        if (m && r.ym !== m) return false;
+        if (c && r.client !== c) return false;
+        return true;
+      });
+    }
+
+    function renderReport(){
+      const rows = getFilteredReportRows();
+
+      if (!rows.length) {
+        $("reportTbody").innerHTML = `<tr><td colspan="6" class="muted">Ingen rapport-data for det valg</td></tr>`;
+        return;
+      }
+
+      $("reportTbody").innerHTML = rows.map(r => {
+        const ex = Number(r.invoice_ex_vat || 0);
+        const incl = inclVat(ex);
+        return `
+          <tr>
+            <td>${escapeHtml(r.ym)}</td>
+            <td>${escapeHtml(r.client)}</td>
+            <td>${Number(r.jobs || 0)}</td>
+            <td>${fmtH(r.work_minutes || 0)}</td>
+            <td>${fmtH(r.travel_minutes || 0)}</td>
+            <td>
+              ${ex.toFixed(2)}<br>
+              <small class="muted">(${incl.toFixed(2)} inkl. moms)</small>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
     function exportReportCSV(){
       const rows = getFilteredReportRows();
+
       const header = ["Måned","Kunde","Jobs","WorkMin","WorkTimer","TransportMin","TransportTimer","FaktureringExMoms","FaktureringInclMoms"];
       const lines = [header.join(",")];
 
@@ -1116,7 +1190,61 @@
       URL.revokeObjectURL(url);
     }
 
-    // ------------------ AUTH ------------------
+    // -------- CREATE / EDIT --------
+    function resetJobForm(){
+      $("invoiceNo").value = "";
+      $("jobDate").value = todayISO();
+      $("categorySelect").value = "";
+      $("statusSelect").value = "draft";
+
+      $("clientSelect").value = "";
+      $("clientManual").value = "";
+      updateClientManualVisibility();
+      updateClientRateHints();
+
+      $("workText").value = "";
+      $("travelMinutes").value = "";
+      $("invoiceExVat").value = "";
+      $("invoiceInclPreview").textContent = "";
+      $("notes").value = "";
+
+      $("autoCalcAmount").checked = true;
+      $("autoCalcHint").textContent = "";
+      $("jobMsg").textContent = "";
+    }
+
+    function openEdit(id){
+      const j = jobs.find(x => String(x.id) === String(id));
+      if (!j) return;
+
+      editingId = j.id;
+      $("editCard").classList.remove("hidden");
+      $("editId").textContent = j.id;
+
+      $("editInvoiceNo").value = j.invoice_no ?? "";
+      $("editJobDate").value = j.job_date ?? todayISO();
+      $("editCategorySelect").value = j.category_id ?? "";
+      $("editStatusSelect").value = j.status ?? "draft";
+
+      $("editClientSelect").value = j.client_id ?? "";
+      $("editClientManual").value = (j.client_id ? "" : (j.client ?? j.client_name ?? ""));
+      updateEditClientManualVisibility();
+      updateEditClientRateHints();
+
+      $("editWorkText").value = j.work_text ?? "";
+      $("editTravelMinutes").value = j.travel_minutes ?? 0;
+      $("editInvoiceExVat").value = j.invoice_amount_ex_vat ?? "";
+      $("editNotes").value = j.notes ?? "";
+
+      $("editAutoCalcAmount").checked = true;
+      updateEditInvoicePreview();
+      maybeAutoCalcEditAmount();
+
+      $("editMsg").textContent = "";
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }
+
+    // -------- AUTH --------
     async function checkSession(){
       const { data } = await supabase.auth.getSession();
       user = data?.session?.user ?? null;
@@ -1133,7 +1261,7 @@
       }
     }
 
-    // ------------------ EVENTS ------------------
+    // -------- EVENTS --------
     $("loginBtn").addEventListener("click", async () => {
       $("loginMsg").textContent = "";
       const email = $("email").value.trim();
@@ -1144,6 +1272,7 @@
 
       user = data.user;
       setLoggedInUI(true);
+
       $("jobDate").value = todayISO();
       $("statusSelect").value = "draft";
       await loadClients();
@@ -1174,7 +1303,7 @@
       setLoggedInUI(false);
     });
 
-    // Clients
+    // Clients actions
     $("addClientBtn").addEventListener("click", async () => {
       $("clientMsg").textContent = "";
       const name = $("newClientName").value.trim();
@@ -1218,6 +1347,7 @@
       const invoice_no = $("invoiceNo").value.trim();
       const job_date = $("jobDate").value || todayISO();
       const category_id = $("categorySelect").value || null;
+
       const status = $("statusSelect").value || "draft";
 
       const client_id = $("clientSelect").value || null;
@@ -1225,6 +1355,16 @@
 
       const work_text = $("workText").value.trim();
       const work_minutes = parseWorkMinutes(work_text);
+
+      // auto-calc (if enabled and client has rate)
+      if ($("autoCalcAmount").checked && client_id) {
+        const c = getClientById(client_id);
+        if (c?.hourly_rate != null && Number(c.hourly_rate) > 0) {
+          const amount = round2((work_minutes / 60) * Number(c.hourly_rate));
+          $("invoiceExVat").value = amount ? amount.toFixed(2) : "";
+          updateNewInvoicePreview();
+        }
+      }
 
       const travel_minutes = Math.max(0, Number($("travelMinutes").value || 0));
       const invoice_amount_ex_vat = $("invoiceExVat").value === "" ? null : Number($("invoiceExVat").value);
@@ -1247,7 +1387,7 @@
 
       if (error) { $("jobMsg").textContent = error.message; return; }
 
-      $("jobMsg").textContent = "Job gemt ✅";
+      $("jobMsg").textContent = "Job gemt ✅ (ID er genereret automatisk)";
       resetJobForm();
       await loadJobs();
       await loadReportRows();
@@ -1255,7 +1395,7 @@
 
     $("resetJobBtn").addEventListener("click", resetJobForm);
 
-    // Edit job actions
+    // Edit actions
     $("cancelEditBtn").addEventListener("click", () => {
       editingId = null;
       $("editCard").classList.add("hidden");
@@ -1271,6 +1411,16 @@
       const client_id = $("editClientSelect").value || null;
       const client = client_id ? (getClientById(client_id)?.name || null) : ($("editClientManual").value.trim() || null);
 
+      // auto-calc in edit
+      if ($("editAutoCalcAmount").checked && client_id) {
+        const c = getClientById(client_id);
+        if (c?.hourly_rate != null && Number(c.hourly_rate) > 0) {
+          const amount = round2((work_minutes / 60) * Number(c.hourly_rate));
+          $("editInvoiceExVat").value = amount ? amount.toFixed(2) : "";
+          updateEditInvoicePreview();
+        }
+      }
+
       const patch = {
         invoice_no: $("editInvoiceNo").value.trim(),
         job_date: $("editJobDate").value || todayISO(),
@@ -1282,7 +1432,7 @@
         work_minutes,
         travel_minutes: Math.max(0, Number($("editTravelMinutes").value || 0)),
         invoice_amount_ex_vat: $("editInvoiceExVat").value === "" ? null : Number($("editInvoiceExVat").value),
-        notes: ($("editNotes").value || "").trim() || null
+        notes: $("editNotes").value.trim() || null
       };
 
       const { error } = await supabase.from("jobs").update(patch).eq("id", editingId);
@@ -1314,7 +1464,10 @@
     $("yearFilter").addEventListener("change", renderAll);
     $("statusFilter").addEventListener("change", renderAll);
 
-    $("exportBtn").addEventListener("click", () => exportCSV(filterJobs()));
+    $("exportBtn").addEventListener("click", () => {
+      const filtered = filterJobs();
+      exportCSV(filtered);
+    });
 
     // Report actions
     $("reportRefreshBtn").addEventListener("click", loadReportRows);
@@ -1322,27 +1475,20 @@
     $("reportMonth").addEventListener("change", renderReport);
     $("reportClient").addEventListener("change", renderReport);
 
-    // Invoice previews + auto calc (NEW)
+    // Invoice previews + auto calc (NEW JOB)
     $("invoiceExVat").addEventListener("input", updateNewInvoicePreview);
     $("workText").addEventListener("input", () => { maybeAutoCalcNewAmount(); });
     $("autoCalcAmount").addEventListener("change", () => { maybeAutoCalcNewAmount(); });
-    $("clientSelect").addEventListener("change", () => {
-      updateClientManualVisibility();
-      updateClientRateHints();
-      maybeAutoCalcNewAmount();
-    });
+    $("clientSelect").addEventListener("change", () => { updateClientManualVisibility(); updateClientRateHints(); maybeAutoCalcNewAmount(); });
+    $("clientManual").addEventListener("input", () => { /* no-op */ });
 
     // Invoice previews + auto calc (EDIT)
     $("editInvoiceExVat").addEventListener("input", updateEditInvoicePreview);
     $("editWorkText").addEventListener("input", () => { maybeAutoCalcEditAmount(); });
     $("editAutoCalcAmount").addEventListener("change", () => { maybeAutoCalcEditAmount(); });
-    $("editClientSelect").addEventListener("change", () => {
-      updateEditClientManualVisibility();
-      updateEditClientRateHints();
-      maybeAutoCalcEditAmount();
-    });
+    $("editClientSelect").addEventListener("change", () => { updateEditClientManualVisibility(); updateEditClientRateHints(); maybeAutoCalcEditAmount(); });
 
-    // INIT
+    // Initial
     await checkSession();
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
