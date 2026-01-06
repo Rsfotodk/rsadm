@@ -1,414 +1,333 @@
 <!doctype html>
 <html lang="da">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RSADM – Statistik</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RSADM – Statistik</title>
 
-  <style>
-    :root{
-      --maxw: 1200px;
-      --pad: 24px;
-      --border: #e8e8e8;
-      --muted: #555;
-      --muted2:#666;
-      --btn: #111;
-      --btnText:#fff;
-      --btn2:#eee;
-      --btn2Text:#111;
-      --shadow: 0 6px 18px rgba(0,0,0,.06);
-      --pill:#f2f2f2;
-      --pillPlan:#fff3cd;
-    }
-    *{ box-sizing:border-box; }
-    body{ font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin:0; background:#fff; color:#111; }
-    .wrap{ max-width: var(--maxw); margin: 24px auto; padding: 0 var(--pad); }
-    h1{ margin:0 0 6px; }
-    h2{ margin:0; }
-    .muted{ color: var(--muted); margin: 6px 0 0; }
-    .small{ font-size:12px; color: var(--muted2); }
-    .hidden{ display:none !important; }
+<style>
+:root{
+  --bg:#0b0e12;
+  --card:#121721;
+  --card2:#0f1420;
+  --border:#1e2636;
+  --text:#e7eaf0;
+  --muted:#9aa3b2;
+  --accent:#ff7a1a;
+  --accent2:#1f6feb;
+  --danger:#ff5d5d;
+  --radius:18px;
+}
 
-    .topbar{
-      display:flex; justify-content:space-between; align-items:center; gap:12px;
-      margin-bottom: 12px;
-    }
-    .topbar .right{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:
+    radial-gradient(800px 400px at 10% 10%, rgba(255,122,26,.08), transparent 60%),
+    radial-gradient(800px 400px at 90% 80%, rgba(31,111,235,.08), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
 
-    .card{ border:1px solid var(--border); border-radius:16px; padding:16px; margin-top:16px; background:#fff; box-shadow: var(--shadow); }
-    .grid{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
-    label{ font-size:12px; color:#333; display:block; margin:0 0 6px; }
-    select, button{ padding:10px; border-radius:12px; border:1px solid #ccc; }
-    button{ background: var(--btn); color: var(--btnText); cursor:pointer; border:none; }
-    button.secondary{ background: var(--btn2); color: var(--btn2Text); border:1px solid #ccc; }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
+.wrap{
+  max-width:1200px;
+  margin:0 auto;
+  padding:20px;
+}
 
-    table{ width:100%; border-collapse:collapse; margin-top:12px; }
-    th, td{ border-bottom:1px solid #eee; padding:8px; font-size:13px; text-align:left; vertical-align:top; }
-    th{ text-transform:uppercase; font-size:12px; color: var(--muted2); letter-spacing:.04em; }
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:14px 18px;
+  border-radius:var(--radius);
+  background:linear-gradient(180deg, #141a26, #0e131d);
+  border:1px solid var(--border);
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
 
-    .stat{ border:1px solid #eee; border-radius:14px; padding:12px; }
-    .stat .k{ font-size:12px; color: var(--muted2); }
-    .stat .v{ font-size:20px; font-weight:700; }
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.logo{
+  font-weight:900;
+  letter-spacing:.5px;
+}
+.logo span{ color:var(--accent); }
 
-    .linkbtn{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:10px 14px; border-radius:12px;
-      background: var(--btn2); color: var(--btn2Text);
-      border:1px solid #ccc; text-decoration:none; font-size:14px; line-height:1;
-    }
+.actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
 
-    .pill{
-      display:inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: var(--pill);
-      font-size: 12px;
-      border: 1px solid #e6e6e6;
-    }
-    .pill.plan{ background: var(--pillPlan); }
+button{
+  background:#1a2030;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px 14px;
+  cursor:pointer;
+  font-weight:600;
+}
+button.secondary{ background:#141a26; }
+button.accent{
+  background:linear-gradient(180deg, #ff8a3a, #ff6a00);
+  border:none;
+}
+button:hover{ filter:brightness(1.05); }
 
-    @media (max-width: 900px){
-      .grid{ grid-template-columns: 1fr; }
-      .topbar{ flex-direction:column; align-items:flex-start; }
-      .topbar .right{ justify-content:flex-start; }
-    }
-  </style>
+.grid{
+  display:grid;
+  gap:18px;
+  margin-top:20px;
+}
+.grid-2{ grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+.grid-3{ grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+
+.card{
+  background:linear-gradient(180deg, var(--card), var(--card2));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+
+.card h2{
+  margin:0 0 14px 0;
+  font-size:1.1rem;
+}
+
+.stat{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.stat .label{
+  color:var(--muted);
+  font-size:.85rem;
+}
+.stat .value{
+  font-size:1.6rem;
+  font-weight:800;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th, td{
+  padding:10px 8px;
+  border-bottom:1px solid var(--border);
+  text-align:left;
+}
+th{
+  color:var(--muted);
+  font-size:.8rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+tfoot td{
+  font-weight:800;
+}
+
+.muted{ color:var(--muted); }
+
+@media (max-width:700px){
+  .topbar{ flex-direction:column; align-items:flex-start; }
+}
+</style>
 </head>
 
 <body>
-  <div class="wrap">
+<div class="wrap">
 
-    <div class="topbar">
-      <div>
-        <h1>RSADM – Statistik</h1>
-        <p class="muted">Overblik og rapporter – kun læsning.</p>
-      </div>
-      <div class="right">
-        <a class="linkbtn" href="index.html">← Tilbage</a>
-        <div id="whoami" class="small"></div>
-        <button id="logoutBtn" type="button" class="secondary">Log ud</button>
-      </div>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">RS<span>ADM</span></div>
+      <div class="muted">Statistik & rapporter</div>
+    </div>
+    <div class="actions">
+      <a href="index.html"><button class="secondary">← Tilbage</button></a>
+      <button id="logoutBtn">Log ud</button>
+    </div>
+  </div>
+
+  <!-- OVERBLIK -->
+  <div class="grid grid-3">
+    <div class="card stat">
+      <div class="label">Jobs</div>
+      <div class="value" id="statJobs">–</div>
+    </div>
+    <div class="card stat">
+      <div class="label">Arbejdstimer</div>
+      <div class="value" id="statWork">–</div>
+    </div>
+    <div class="card stat">
+      <div class="label">Omsætning (ex. moms)</div>
+      <div class="value" id="statRevenue">–</div>
+    </div>
+  </div>
+
+  <!-- KATEGORIER + MÅNEDER -->
+  <div class="grid grid-2">
+    <div class="card">
+      <h2>Jobs pr. kategori</h2>
+      <table>
+        <thead>
+          <tr><th>Kategori</th><th>Jobs</th><th>Timer</th></tr>
+        </thead>
+        <tbody id="catBody"></tbody>
+      </table>
     </div>
 
-    <div id="statsApp" class="hidden">
+    <div class="card">
+      <h2>Timer pr. måned</h2>
+      <table>
+        <thead>
+          <tr><th>Måned</th><th>Timer</th></tr>
+        </thead>
+        <tbody id="monthBody"></tbody>
+      </table>
+    </div>
+  </div>
 
-      <div class="card">
-        <h2>Overblik (udført +)</h2>
-        <div class="grid" id="kpis" style="margin-top:12px;"></div>
-        <p class="small muted" style="margin-top:10px;">KPI’er ignorerer Planlagt/Annulleret.</p>
-      </div>
-
-      <div class="card">
-        <h2>Kommende planlagte jobs</h2>
-        <table>
-          <thead>
-            <tr><th>Dato</th><th>Kunde</th><th>Kategori</th><th>Status</th></tr>
-          </thead>
-          <tbody id="plannedRows"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Jobs pr. kategori (udført +)</h2>
-        <table>
-          <thead>
-            <tr><th>Kategori</th><th>Jobs</th><th>Timer</th></tr>
-          </thead>
-          <tbody id="byCategory"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Timer pr. måned (udført +)</h2>
-        <table>
-          <thead>
-            <tr><th>Måned</th><th>Timer</th></tr>
-          </thead>
-          <tbody id="byMonth"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Månedsrapport pr. kunde</h2>
-
-        <div class="grid" style="margin-top:12px;">
-          <div>
-            <label>Måned</label>
-            <select id="monthFilter"></select>
-          </div>
-          <div>
-            <label>Kunde</label>
-            <select id="clientFilter"></select>
-          </div>
-          <div style="align-self:end;">
-            <button id="exportBtn" type="button">Eksport CSV</button>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Måned</th>
-              <th>Kunde</th>
-              <th>Jobs</th>
-              <th>Arbejdstid</th>
-              <th>Transport</th>
-              <th>Fakturering ex. moms</th>
-            </tr>
-          </thead>
-          <tbody id="reportBody"></tbody>
-        </table>
-
-        <p id="msg" class="muted" style="margin-top:10px;"></p>
-      </div>
-
-    </div><!-- /#statsApp -->
-
-  </div><!-- /.wrap -->
-
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-    const SUPABASE_URL = "https://epzbdezmbyyduqjthdzt.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwemJkZXptYnl5ZHVxanRoZHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDU3MzAsImV4cCI6MjA4MjA4MTczMH0.d_-8frGdHnvBO6smGThEUI81KUWI39rp5VX65O_HauU";
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const $ = (id) => document.getElementById(id);
-
-    const escapeHtml = (s) =>
-      String(s ?? "").replace(/[&<>"']/g, (c)=>({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[c]));
-
-    const fmtH = (mins) => {
-      const m = Math.max(0, Math.round(Number(mins)||0));
-      const h = Math.floor(m/60);
-      const r = m%60;
-      return `${h}:${String(r).padStart(2,'0')}`;
-    };
-
-    function todayISO(){
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,'0');
-      const da = String(d.getDate()).padStart(2,'0');
-      return `${y}-${m}-${da}`;
-    }
-
-    function ymFromDate(d){
-      const s = String(d ?? "");
-      const y = s.slice(0,4);
-      const m = s.slice(5,7);
-      return (y && m) ? `${y}-${m}` : "";
-    }
-
-    let user = null;
-    let reportRows = [];
-    let jobsRows = [];
-
-    async function requireLogin(){
-      const { data, error } = await supabase.auth.getSession();
-      user = data?.session?.user ?? null;
-
-      if (error || !user) {
-        window.location.replace("index.html");
-        return false;
-      }
-      return true;
-    }
-
-    function showApp(){
-      $("statsApp").classList.remove("hidden");
-      $("whoami").textContent = user?.email ? `Logget ind: ${user.email}` : "";
-    }
-
-    $("logoutBtn").addEventListener("click", async () => {
-      await supabase.auth.signOut();
-      window.location.replace("index.html");
-    });
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) window.location.replace("index.html");
-    });
-
-    function renderDropdowns(rows){
-      const months = Array.from(new Set(rows.map(r => r.ym))).sort((a,b)=>b.localeCompare(a));
-      const clients = Array.from(new Set(rows.map(r => r.client))).sort((a,b)=>a.localeCompare(b));
-
-      $("monthFilter").innerHTML = `<option value="">Alle</option>` + months.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
-      $("clientFilter").innerHTML = `<option value="">Alle</option>` + clients.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-    }
-
-    function filteredReport(rows){
-      const m = $("monthFilter").value;
-      const c = $("clientFilter").value;
-      return rows.filter(r => (!m || r.ym === m) && (!c || r.client === c));
-    }
-
-    function renderReport(rows){
-      const r = filteredReport(rows);
-      $("reportBody").innerHTML = r.map(x => `
+  <!-- MÅNEDSRAPPORT -->
+  <div class="card">
+    <h2>Månedsrapport pr. kunde</h2>
+    <table>
+      <thead>
         <tr>
-          <td>${escapeHtml(x.ym)}</td>
-          <td>${escapeHtml(x.client)}</td>
-          <td>${Number(x.jobs||0)}</td>
-          <td>${fmtH(x.work_minutes||0)}</td>
-          <td>${fmtH(x.travel_minutes||0)}</td>
-          <td>${Number(x.invoice_ex_vat||0).toFixed(2)}</td>
+          <th>Måned</th>
+          <th>Kunde</th>
+          <th>Jobs</th>
+          <th>Timer</th>
+          <th>Kørsel</th>
+          <th>Beløb</th>
         </tr>
-      `).join("") || `<tr><td colspan="6" class="muted">Ingen data for filter</td></tr>`;
-    }
+      </thead>
+      <tbody id="reportBody"></tbody>
+    </table>
+    <div style="margin-top:12px;">
+      <button id="exportCsvBtn" class="secondary">CSV eksport</button>
+    </div>
+  </div>
 
-    function exportReportCSV(rows){
-      const header = ["Måned","Kunde","Jobs","Arbejdstid","Transport","Fakturering ex moms"];
-      const lines = [header.join(",")];
+</div>
 
-      const esc = (s) => {
-        const str = String(s ?? "");
-        return /[,"\n]/.test(str) ? `"${str.replace(/"/g,'""')}"` : str;
-      };
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-      rows.forEach(r=>{
-        lines.push([
-          esc(r.ym),
-          esc(r.client),
-          esc(r.jobs),
-          esc(fmtH(r.work_minutes||0)),
-          esc(fmtH(r.travel_minutes||0)),
-          esc(r.invoice_ex_vat ?? 0),
-        ].join(","));
-      });
+const supabaseUrl = "https://epzbdezmbyyduqjthdzt.supabase.co";
+const supabaseAnonKey = "INDSÆT_DIN_ANON_KEY_HER";
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-      const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8;"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "rsadm_statistik.csv";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
+const $ = id => document.getElementById(id);
+let user = null;
 
-    function renderKPIsFromJobs(allJobs){
-      const counted = allJobs.filter(j => ["completed","invoiced","paid"].includes(j.status));
-      const totalJobs = counted.length;
-      const workMin = counted.reduce((a,j)=>a+Number(j.work_minutes||0),0);
-      const travelMin = counted.reduce((a,j)=>a+Number(j.travel_minutes||0),0);
-      const invoiceEx = counted.reduce((a,j)=>a+Number(j.invoice_amount_ex_vat||0),0);
+/* AUTH GUARD */
+const { data: { session } } = await supabase.auth.getSession();
+if(!session){
+  location.href = "index.html";
+}
+user = session.user;
 
-      $("kpis").innerHTML = `
-        <div class="stat"><div class="k">Jobs</div><div class="v">${totalJobs}</div></div>
-        <div class="stat"><div class="k">Arbejdstid</div><div class="v">${fmtH(workMin)}</div></div>
-        <div class="stat"><div class="k">Transport</div><div class="v">${fmtH(travelMin)}</div></div>
-        <div class="stat"><div class="k">Fakturering ex. moms</div><div class="v">${invoiceEx.toFixed(2)}</div></div>
-      `;
-    }
+/* LOG OUT */
+$("logoutBtn").onclick = async () => {
+  await supabase.auth.signOut();
+  location.href = "index.html";
+};
 
-    function renderByCategoryFromJobs(allJobs){
-      const counted = allJobs.filter(j => ["completed","invoiced","paid"].includes(j.status));
+/* LOAD DATA */
+async function loadStats(){
+  const { data: jobs } = await supabase
+    .from("jobs")
+    .select("job_date, work_minutes, travel_minutes, invoice_amount_ex_vat, categories(name)")
+    .eq("user_id", user.id);
 
-      const map = new Map();
-      for (const j of counted) {
-        const name = j.categories?.name ?? "(Ingen)";
-        const cur = map.get(name) || { count: 0, minutes: 0 };
-        cur.count += 1;
-        cur.minutes += Number(j.work_minutes||0);
-        map.set(name, cur);
-      }
+  const { data: report } = await supabase
+    .from("v_monthly_client_report")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("ym", { ascending:false });
 
-      const out = Array.from(map.entries())
-        .sort((a,b) => (b[1].count - a[1].count) || a[0].localeCompare(b[0]))
-        .map(([name, v]) => `
-          <tr>
-            <td>${escapeHtml(name)}</td>
-            <td>${v.count}</td>
-            <td>${fmtH(v.minutes)}</td>
-          </tr>
-        `).join("");
+  // OVERBLIK
+  $("statJobs").textContent = jobs.length;
+  $("statWork").textContent =
+    (jobs.reduce((a,j)=>a+(j.work_minutes||0),0)/60).toFixed(1) + " t";
+  $("statRevenue").textContent =
+    jobs.reduce((a,j)=>a+Number(j.invoice_amount_ex_vat||0),0).toLocaleString("da-DK");
 
-      $("byCategory").innerHTML = out || `<tr><td colspan="3" class="muted">Ingen data</td></tr>`;
-    }
+  // KATEGORIER
+  const byCat = {};
+  jobs.forEach(j=>{
+    const k = j.categories?.name || "Ukendt";
+    byCat[k] ||= { jobs:0, min:0 };
+    byCat[k].jobs++;
+    byCat[k].min += j.work_minutes||0;
+  });
+  $("catBody").innerHTML = Object.entries(byCat).map(([k,v])=>`
+    <tr>
+      <td>${k}</td>
+      <td>${v.jobs}</td>
+      <td>${(v.min/60).toFixed(1)}</td>
+    </tr>
+  `).join("");
 
-    function renderByMonthFromJobs(allJobs){
-      const counted = allJobs.filter(j => ["completed","invoiced","paid"].includes(j.status));
+  // MÅNEDER
+  const byMonth = {};
+  jobs.forEach(j=>{
+    const m = j.job_date?.slice(0,7);
+    if(!m) return;
+    byMonth[m] = (byMonth[m]||0) + (j.work_minutes||0);
+  });
+  $("monthBody").innerHTML = Object.entries(byMonth)
+    .sort((a,b)=>b[0].localeCompare(a[0]))
+    .map(([m,min])=>`
+      <tr>
+        <td>${m}</td>
+        <td>${(min/60).toFixed(1)}</td>
+      </tr>
+    `).join("");
 
-      const monthMap = new Map();
-      for (const j of counted) {
-        const ym = ymFromDate(j.job_date);
-        if (!ym) continue;
-        monthMap.set(ym, (monthMap.get(ym)||0) + Number(j.work_minutes||0));
-      }
+  // RAPPORT
+  $("reportBody").innerHTML = report.map(r=>`
+    <tr>
+      <td>${r.ym}</td>
+      <td>${r.client}</td>
+      <td>${r.jobs}</td>
+      <td>${(r.work_minutes/60).toFixed(1)}</td>
+      <td>${(r.travel_minutes/60).toFixed(1)}</td>
+      <td>${Number(r.invoice_ex_vat).toLocaleString("da-DK")}</td>
+    </tr>
+  `).join("");
 
-      const out = Array.from(monthMap.entries())
-        .sort((a,b)=> b[0].localeCompare(a[0]))
-        .map(([ym, mins]) => `<tr><td>${escapeHtml(ym)}</td><td>${fmtH(mins)}</td></tr>`)
-        .join("");
+  // CSV
+  $("exportCsvBtn").onclick = ()=>{
+    const rows = [
+      ["Måned","Kunde","Jobs","Timer","Kørsel","Beløb"],
+      ...report.map(r=>[
+        r.ym, r.client, r.jobs,
+        (r.work_minutes/60).toFixed(1),
+        (r.travel_minutes/60).toFixed(1),
+        r.invoice_ex_vat
+      ])
+    ];
+    const csv = rows.map(r=>r.join(";")).join("\n");
+    const blob = new Blob([csv],{type:"text/csv"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "rsadm_statistik.csv";
+    a.click();
+  };
+}
 
-      $("byMonth").innerHTML = out || `<tr><td colspan="2" class="muted">Ingen data</td></tr>`;
-    }
-
-    function renderPlanned(allJobs){
-      const today = todayISO();
-      const planned = allJobs
-        .filter(j => j.status === "planned" && String(j.job_date||"") >= today)
-        .sort((a,b)=> String(a.job_date||"").localeCompare(String(b.job_date||"")))
-        .slice(0, 30);
-
-      $("plannedRows").innerHTML = planned.map(j => `
-        <tr>
-          <td>${escapeHtml(j.job_date)}</td>
-          <td>${escapeHtml(j.client || "")}</td>
-          <td>${escapeHtml(j.categories?.name ?? "(Ingen)")}</td>
-          <td><span class="pill plan">Planlagt</span></td>
-        </tr>
-      `).join("") || `<tr><td colspan="4" class="muted">Ingen kommende planlagte jobs</td></tr>`;
-    }
-
-    async function loadAll(){
-      $("msg").textContent = "Henter statistik…";
-
-      const jobsQ = supabase
-        .from("jobs")
-        .select("job_date,status,work_minutes,travel_minutes,invoice_amount_ex_vat,categories(name)")
-        .eq("user_id", user.id);
-
-      const reportQ = supabase
-        .from("v_monthly_client_report")
-        .select("ym,client,jobs,work_minutes,travel_minutes,invoice_ex_vat")
-        .eq("user_id", user.id)
-        .order("ym", { ascending:false })
-        .order("client", { ascending:true });
-
-      const [
-        { data: jobsData, error: jobsError },
-        { data: reportData, error: reportError }
-      ] = await Promise.all([jobsQ, reportQ]);
-
-      if (jobsError) { $("msg").textContent = jobsError.message; return; }
-      if (reportError) { $("msg").textContent = reportError.message; return; }
-
-      jobsRows = jobsData ?? [];
-      reportRows = reportData ?? [];
-
-      $("msg").textContent = "";
-
-      renderKPIsFromJobs(jobsRows);
-      renderPlanned(jobsRows);
-      renderByCategoryFromJobs(jobsRows);
-      renderByMonthFromJobs(jobsRows);
-
-      renderDropdowns(reportRows);
-      renderReport(reportRows);
-
-      $("monthFilter").onchange = () => renderReport(reportRows);
-      $("clientFilter").onchange = () => renderReport(reportRows);
-      $("exportBtn").onclick = () => exportReportCSV(filteredReport(reportRows));
-    }
-
-    if (await requireLogin()) {
-      showApp();
-      await loadAll();
-    }
-  </script>
+loadStats();
+</script>
 </body>
 </html>
