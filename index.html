@@ -6,28 +6,28 @@
   <title>RSADM – Job & Faktura Overblik</title>
 
   <style>
+    @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;700;900&family=Space+Mono:wght@400;700&display=swap");
+
     :root{
       --maxw: 1200px;
       --pad: 18px;
 
-      /* RSFOTO vibe */
-      --bg0:#07080b;
-      --bg1:#0b0f17;
-      --card: rgba(255,255,255,.06);
-      --card2: rgba(255,255,255,.04);
-      --line: rgba(255,255,255,.10);
+      --bg:#f2efe8;
+      --bg-soft:#e9e3d6;
+      --card:#fbf8f1;
+      --card2:#f0eadc;
+      --line:#1d1d1b;
 
-      --text:#eef2ff;
-      --muted:#a8b2c6;
-      --muted2:#7f8aa3;
+      --text:#11110f;
+      --muted:#4b463f;
+      --muted2:#6b655c;
 
-      /* Orange fra logo */
-      --accent:#ff5a18;
-      --accent2:#ff7a3d;
+      --accent:#c43c2d;
+      --accent2:#0f766e;
 
-      --danger:#ef4444;
-      --shadow: 0 18px 50px rgba(0,0,0,.45);
-      --radius: 18px;
+      --danger:#b91c1c;
+      --shadow: 8px 8px 0 rgba(29,29,27,1);
+      --radius: 6px;
     }
 
     *{ box-sizing:border-box; }
@@ -35,28 +35,30 @@
 
     body{
       margin:0;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-family: "Fraunces", "Iowan Old Style", serif;
       color:var(--text);
       background:
-        radial-gradient(900px 600px at 18% 10%, rgba(255,90,24,.22), transparent 55%),
-        radial-gradient(800px 500px at 85% 18%, rgba(255,255,255,.08), transparent 55%),
-        linear-gradient(180deg, var(--bg0), var(--bg1));
+        linear-gradient(0deg, rgba(0,0,0,.025), rgba(0,0,0,.025)),
+        repeating-linear-gradient(135deg, rgba(0,0,0,.03) 0 2px, transparent 2px 6px),
+        linear-gradient(180deg, var(--bg), var(--bg-soft));
     }
 
     .wrap{
       max-width: var(--maxw);
-      margin: 18px auto;
+      margin: 18px auto 40px;
       padding: 0 var(--pad);
     }
 
-    h1{ margin:0; font-size:18px; letter-spacing:.2px; }
-    h2{ margin:0; font-size:15px; letter-spacing:.2px; }
-    h3{ margin:0; font-size:13px; color: var(--muted); font-weight:700; }
+    h1{ margin:0; font-size:20px; letter-spacing:.4px; font-family: "Fraunces", "Iowan Old Style", serif; }
+    h2{ margin:0; font-size:16px; letter-spacing:.4px; font-family: "Fraunces", "Iowan Old Style", serif; text-transform: uppercase; }
+    h3{ margin:0; font-size:13px; color: var(--muted); font-weight:700; letter-spacing:.6px; text-transform: uppercase; }
 
     .muted{ color: var(--muted); margin: 6px 0 0; }
     .small{ font-size:12px; color: var(--muted2); }
-    .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+    .mono{ font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .hidden{ display:none !important; }
+
+    a{ color: inherit; text-decoration: none; }
 
     /* Topbar */
     .topbar{
@@ -65,10 +67,9 @@
       align-items:center;
       gap:12px;
       padding: 14px 14px;
-      border: 1px solid var(--line);
+      border: 2px solid var(--line);
       border-radius: var(--radius);
-      background: rgba(10,12,18,.70);
-      backdrop-filter: blur(12px);
+      background: var(--card);
       box-shadow: var(--shadow);
       position: sticky;
       top: 12px;
@@ -83,20 +84,20 @@
     }
 
     .logo{
-      width: 68px;
-      height: 36px;
-      border-radius: 10px;
+      width: 74px;
+      height: 38px;
+      border-radius: 4px;
       display:flex;
       align-items:center;
       justify-content:center;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
+      background: #fff;
+      border: 2px solid var(--line);
       font-weight:900;
-      letter-spacing:.5px;
+      letter-spacing:.6px;
       user-select:none;
     }
     .logo span:first-child{ color: var(--accent); }
-    .logo span:last-child{ color: #cbd5e1; }
+    .logo span:last-child{ color: #2a2a2a; }
 
     .brandtext{ min-width:0; }
     .brandtext .sub{ font-size:12px; color: var(--muted); margin-top:2px; }
@@ -109,16 +110,44 @@
       justify-content:flex-end;
     }
 
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top: 12px;
+    }
+
+    .tab-btn{
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 2px solid var(--line);
+      background: var(--card);
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+
+    .tab-btn.active{
+      background: var(--accent);
+      border-color: var(--line);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
     /* Cards */
     .card{
       margin-top: 14px;
-      border: 1px solid var(--line);
+      border: 2px solid var(--line);
       border-radius: var(--radius);
       padding: 14px;
-      background: rgba(10,12,18,.55);
-      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, var(--card), var(--card2));
       box-shadow: var(--shadow);
+      animation: rise .5s ease both;
     }
+
+    .tab-panel{ display:none; }
+    .tab-panel.active{ display:block; }
 
     .grid{
       display:grid;
@@ -138,45 +167,51 @@
       color: var(--muted);
       margin-bottom: 6px;
       font-weight:700;
-      letter-spacing:.2px;
+      letter-spacing:.8px;
+      text-transform: uppercase;
+      font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
     input,select,textarea{
       width:100%;
       padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
+      border-radius: 4px;
+      border: 2px solid var(--line);
+      background: #fffdf6;
       color: var(--text);
       outline: none;
+      font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
     textarea{ min-height: 84px; resize: vertical; }
 
-    input::placeholder, textarea::placeholder { color: rgba(168,178,198,.55); }
+    input::placeholder, textarea::placeholder { color: rgba(111,106,99,.65); }
 
     button{
       width:auto;
       padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, var(--accent), var(--accent2));
-      color: #120b08;
+      border-radius: 4px;
+      border: 2px solid var(--line);
+      background: var(--accent);
+      color: #fff;
       font-weight: 900;
       cursor: pointer;
-      box-shadow: 0 10px 24px rgba(255,90,24,.22);
+      box-shadow: var(--shadow);
+      text-transform: uppercase;
+      letter-spacing: .6px;
     }
 
     button.secondary{
-      background: rgba(255,255,255,.06);
+      background: var(--card);
       color: var(--text);
+      border-color: var(--line);
       box-shadow: none;
     }
 
     button.danger{
-      background: rgba(239,68,68,.16);
-      border-color: rgba(239,68,68,.35);
-      color: #fecaca;
+      background: #fff1f1;
+      border-color: var(--line);
+      color: #7f1d1d;
       box-shadow: none;
     }
 
@@ -191,20 +226,21 @@
       border-collapse: collapse;
       margin-top: 12px;
       overflow:hidden;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 4px;
+      border: 2px solid var(--line);
+      background: #fffdf6;
     }
     th,td{
       padding: 10px 10px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
+      border-bottom: 1px solid var(--line);
       text-align:left;
       vertical-align: top;
       font-size: 13px;
     }
     th{
-      background: rgba(255,255,255,.03);
+      background: #f1ebde;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: .8px;
     }
@@ -215,20 +251,22 @@
       align-items:center;
       gap:6px;
       padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.04);
+      border-radius: 4px;
+      border: 2px solid var(--line);
+      background: #fffdf6;
       font-size: 12px;
       font-weight: 800;
       color: var(--text);
       white-space:nowrap;
+      text-transform: uppercase;
+      letter-spacing: .4px;
     }
 
-    .pill.draft{ background: rgba(148,163,184,.12); border-color: rgba(148,163,184,.28); }
-    .pill.plan{ background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.28); }
-    .pill.ready{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.28); }
-    .pill.inv{ background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.28); }
-    .pill.paid{ background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.30); }
+    .pill.draft{ background: #f5f2ee; }
+    .pill.plan{ background: rgba(14,165,163,.10); border-color: rgba(14,165,163,.35); }
+    .pill.ready{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.35); }
+    .pill.inv{ background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.35); }
+    .pill.paid{ background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); }
 
     .totals{
       display:grid;
@@ -238,18 +276,18 @@
     }
 
     .stat{
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      background: rgba(255,255,255,.03);
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      background: #fffdf6;
       padding: 12px;
     }
     .stat .k{ color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing:.3px; }
     .stat .v{ margin-top: 6px; font-size: 18px; font-weight: 950; }
 
     .hint{
-      border: 1px dashed rgba(255,255,255,.20);
-      background: rgba(255,255,255,.03);
-      border-radius: 16px;
+      border: 2px dashed var(--line);
+      background: #fffdf6;
+      border-radius: 6px;
       padding: 12px;
       margin-top: 12px;
       color: var(--muted);
@@ -263,14 +301,40 @@
       align-items:center;
       gap: 10px;
     }
-    .catActionsCol{ display:none; width:1%; white-space:nowrap; }
-    #categoriesCard.cat-admin .catActionsCol{ display:table-cell; }
+    .cat-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .cat-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      background: #fffdf6;
+    }
+    .cat-name{ font-weight: 800; font-size: 13px; }
+    .cat-actions{ display:none; }
+    #categoriesCard.cat-admin .cat-actions{ display:inline-flex; }
 
     .iconbtn{
       padding: 8px 10px;
-      border-radius: 12px;
+      border-radius: 4px;
       font-weight: 900;
       line-height: 1;
+    }
+
+    @keyframes rise{
+      from{ opacity:0; transform: translateY(8px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{ animation: none !important; transition: none !important; }
     }
 
     @media (max-width: 980px){
@@ -278,7 +342,7 @@
       .totals{ grid-template-columns: repeat(2, minmax(0,1fr)); }
       .topbar{ position: static; }
     }
-  </style>
+</style>
 </head>
 
 <body>
@@ -295,10 +359,17 @@
       </div>
 
       <div class="topactions">
-        <a href="stats.html" id="statsLink"><button class="secondary">📊 Statistik</button></a>
         <div class="small muted" id="whoami"></div>
         <button id="logoutBtn" type="button" class="secondary">Log ud</button>
       </div>
+    </div>
+
+    <div class="tabs hidden" id="tabs">
+      <button class="tab-btn" data-tab="overblik" type="button">Overblik</button>
+      <button class="tab-btn" data-tab="opret" type="button">Nyt job</button>
+      <button class="tab-btn" data-tab="kunder" type="button">Kunder</button>
+      <button class="tab-btn" data-tab="kategorier" type="button">Kategorier</button>
+      <button class="tab-btn" data-tab="statistik" type="button">Statistik</button>
     </div>
 
     <!-- LOGIN -->
@@ -330,7 +401,7 @@
     <div id="app" class="hidden">
 
       <!-- Clients -->
-      <div class="card">
+      <div class="card tab-panel" data-panel="kunder">
         <h2>Kunder</h2>
         <p class="muted">Kunde-master (navn + timepris). Bruges til dropdown på jobs.</p>
 
@@ -360,7 +431,7 @@
       </div>
 
       <!-- Categories -->
-      <div class="card" id="categoriesCard">
+      <div class="card tab-panel" id="categoriesCard" data-panel="kategorier">
         <div class="cardhead">
           <h2>Kategorier</h2>
           <button id="toggleCatAdminBtn" type="button" class="secondary">Administrer</button>
@@ -376,22 +447,14 @@
           </div>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Kategori</th>
-              <th class="catActionsCol">Handling</th>
-            </tr>
-          </thead>
-          <tbody id="categoriesTbody"></tbody>
-        </table>
+        <div class="cat-grid" id="categoriesGrid"></div>
 
         <p class="muted" id="catMsg"></p>
         <p class="small muted" style="margin-top:0;">Ved sletning: jobs der bruger kategorien sættes til <span class="mono">NULL</span>, og så slettes kategorien.</p>
       </div>
 
       <!-- New job -->
-      <div class="card">
+      <div class="card tab-panel" data-panel="opret">
         <h2>Nyt job</h2>
 
         <div class="grid" style="margin-top:12px;">
@@ -423,11 +486,9 @@
           <div>
             <label>Status</label>
             <select id="statusSelect">
-              <option value="draft">draft</option>
-              <option value="planned">planned</option>
-              <option value="ready">ready</option>
-              <option value="invoiced">invoiced</option>
-              <option value="paid">paid</option>
+              <option value="planned">planlagt</option>
+              <option value="done">udført</option>
+              <option value="invoiced">faktureret</option>
             </select>
           </div>
 
@@ -481,7 +542,7 @@
       </div>
 
       <!-- Jobs list -->
-      <div class="card">
+      <div class="card tab-panel" data-panel="overblik">
         <h2>Jobs</h2>
 
         <div class="row" style="margin-top:12px; align-items:flex-end; justify-content:space-between;">
@@ -498,11 +559,9 @@
               <label>Status</label>
               <select id="statusFilter">
                 <option value="">Alle</option>
-                <option value="draft">draft</option>
-                <option value="planned">planned</option>
-                <option value="ready">ready</option>
-                <option value="invoiced">invoiced</option>
-                <option value="paid">paid</option>
+                <option value="planned">planlagt</option>
+                <option value="done">udført</option>
+                <option value="invoiced">faktureret</option>
               </select>
             </div>
           </div>
@@ -541,8 +600,43 @@
         <p class="muted" id="tableMsg"></p>
       </div>
 
+      <!-- Stats overview -->
+      <div class="card tab-panel" data-panel="statistik">
+        <h2>Statistik</h2>
+        <p class="muted">Overblik over timer, transport og omsætning.</p>
+
+        <div class="row" style="margin-top:12px; align-items:flex-end; justify-content:space-between;">
+          <div style="display:flex; gap:10px; flex-wrap:wrap; flex:1 1 auto;">
+            <div style="min-width: 180px;">
+              <label>Måned</label>
+              <select id="statsMonth"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="totals">
+          <div class="stat"><div class="k">Jobs</div><div id="statTotalJobs" class="v">0</div></div>
+          <div class="stat"><div class="k">Arbejdstid</div><div id="statTotalWork" class="v">0:00</div></div>
+          <div class="stat"><div class="k">Transport</div><div id="statTotalTravel" class="v">0:00</div></div>
+          <div class="stat"><div class="k">Fakturering ex. moms</div><div id="statTotalInv" class="v">0.00</div></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Måned</th>
+              <th>Jobs</th>
+              <th>Arbejdstid</th>
+              <th>Transport</th>
+              <th>Fakturering ex. moms</th>
+            </tr>
+          </thead>
+          <tbody id="statsMonthBody"></tbody>
+        </table>
+      </div>
+
       <!-- Report -->
-      <div class="card">
+      <div class="card tab-panel" data-panel="statistik">
         <h2>Månedsrapport pr. kunde</h2>
         <p class="muted">Kører fra view <span class="mono">v_monthly_client_report</span>.</p>
 
@@ -582,7 +676,7 @@
       </div>
 
       <!-- EDIT CARD -->
-      <div class="card hidden" id="editCard">
+      <div class="card hidden tab-panel" id="editCard" data-panel="overblik">
         <h2>Ret job <span class="mono" id="editId"></span></h2>
         <p class="small muted" id="editDbId"></p>
 
@@ -605,11 +699,9 @@
           <div>
             <label>Status</label>
             <select id="editStatusSelect">
-              <option value="draft">draft</option>
-              <option value="planned">planned</option>
-              <option value="ready">ready</option>
-              <option value="invoiced">invoiced</option>
-              <option value="paid">paid</option>
+              <option value="planned">planlagt</option>
+              <option value="done">udført</option>
+              <option value="invoiced">faktureret</option>
             </select>
           </div>
 
@@ -699,13 +791,23 @@
       return `${h}:${String(r).padStart(2,'0')}`;
     };
 
+    function formatJobError(err){
+      const msg = String(err?.message || "");
+      if (msg.includes("job_no må ikke ændres")) return "Jobnummer kan ikke ændres efter oprettelse.";
+      if (msg.includes("job_no skal være 6 cifre")) return "Jobnummer skal være 6 cifre.";
+      if (msg.includes("job_no år-prefix")) return "Jobnummerets to første cifre skal matche året på datoen.";
+      if (msg.includes("job_no er allerede brugt to gange")) return "Jobnummeret er allerede brugt to gange. Opret igen for nyt nummer.";
+      return msg || "Der opstod en fejl. Prøv igen.";
+    }
+
     function statusBadge(st){
-      const s = String(st||"draft");
+      const s = String(st||"planned");
       if (s === "planned") return `<span class="pill plan">Planlagt</span>`;
-      if (s === "ready") return `<span class="pill ready">Klar</span>`;
+      if (s === "done") return `<span class="pill ready">Udført</span>`;
       if (s === "invoiced") return `<span class="pill inv">Faktureret</span>`;
-      if (s === "paid") return `<span class="pill paid">Betalt</span>`;
-      return `<span class="pill draft">Draft</span>`;
+      if (s === "ready") return `<span class="pill ready">Udført</span>`;
+      if (s === "paid") return `<span class="pill inv">Faktureret</span>`;
+      return `<span class="pill draft">Planlagt</span>`;
     }
 
     // Parse time input to minutes
@@ -747,41 +849,90 @@
       $("app").classList.toggle("hidden", !isIn);
 
       $("logoutBtn").classList.toggle("hidden", !isIn);
-      $("statsLink")?.classList.toggle("hidden", !isIn);
+      $("tabs").classList.toggle("hidden", !isIn);
 
       $("whoami").textContent = isIn && user?.email ? `Logget ind: ${user.email}` : "";
+      if (isIn) setActiveTab(activeTab, false);
+    }
+
+    let activeTab = "overblik";
+    function setActiveTab(name, updateHash = true){
+      activeTab = name || "overblik";
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === activeTab);
+      });
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.toggle("active", panel.dataset.panel === activeTab);
+      });
+      if (updateHash) history.replaceState(null, "", `#${activeTab}`);
+    }
+
+    function initTabs(){
+      const initial = (location.hash || "").replace("#","") || "overblik";
+      setActiveTab(initial, false);
+      document.querySelectorAll("[data-tab]").forEach(btn => {
+        btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
+      });
     }
 
     // -------- JOB NO (6 digits) --------
-    function randJobNo(){
-      return String(Math.floor(100000 + Math.random() * 900000));
+    function getYearPrefix(dateStr){
+      const y = (dateStr && String(dateStr).length >= 4)
+        ? String(dateStr).slice(0,4)
+        : String(new Date().getFullYear());
+      return y.slice(2);
     }
 
-    async function allocateUniqueJobNo(){
-      // prøv et par gange - kollisionschance er lav, men vi sikrer med check
-      for (let i = 0; i < 12; i++){
-        const n = randJobNo();
-        const { data, error } = await supabase
-          .from("jobs")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("job_no", n)
-          .limit(1);
+    function formatJobNo(prefix, seq){
+      return `${prefix}${String(seq).padStart(4,"0")}`;
+    }
 
-        if (error) throw error;
-        if (!data || data.length === 0) return n;
+    async function countJobNoUses(jobNo){
+      const { count, error } = await supabase
+        .from("jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("job_no", jobNo);
+      if (error) throw error;
+      return Number(count || 0);
+    }
+
+    async function allocateJobNoForPrefix(prefix){
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("job_no")
+        .eq("user_id", user.id)
+        .like("job_no", `${prefix}%`)
+        .order("job_no", { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      let next = 1;
+      if (data && data[0]?.job_no){
+        const tail = Number(String(data[0].job_no).slice(-4));
+        if (!Number.isNaN(tail)) next = tail + 1;
+      }
+
+      for (let i = 0; i < 20; i++){
+        if (next > 9999) throw new Error("Årets løbenummer er opbrugt.");
+        const candidate = formatJobNo(prefix, next);
+        const uses = await countJobNoUses(candidate);
+        if (uses < 2) return candidate;
+        next++;
       }
       throw new Error("Kunne ikke finde et unikt jobnummer. Prøv igen.");
     }
 
     async function fillNewJobNo(){
       if (!user) return;
+      const prefix = getYearPrefix($("jobDate").value);
       $("jobNo").value = "……";
-      $("jobNoHint").textContent = "Genererer jobnummer…";
+      $("jobNoHint").textContent = `Genererer ${prefix}XXXX…`;
       try{
-        const n = await allocateUniqueJobNo();
+        const n = await allocateJobNoForPrefix(prefix);
         $("jobNo").value = n;
-        $("jobNoHint").textContent = `Brug fx: ${n}_kundenavn_...`;
+        $("jobNoHint").textContent = `Jobnr for år ${prefix}: ${n}`;
       }catch(e){
         $("jobNo").value = "";
         $("jobNoHint").textContent = e?.message || "Kunne ikke generere jobnummer.";
@@ -920,14 +1071,14 @@
         $("catMsg").textContent = `Fejl ved hentning af kategorier: ${error.message}`;
         categories = [];
         renderCategorySelects();
-        renderCategoriesTable();
+        renderCategoriesGrid();
         return;
       }
 
       categories = data ?? [];
       $("catMsg").textContent = "";
       renderCategorySelects();
-      renderCategoriesTable();
+      renderCategoriesGrid();
     }
 
     async function ensureDefaultCategories(){
@@ -945,15 +1096,18 @@
       $("editCategorySelect").innerHTML = `<option value="">(Vælg)</option>` + opts;
     }
 
-    function renderCategoriesTable(){
-      $("categoriesTbody").innerHTML = (categories || []).map(c => `
-        <tr>
-          <td>${escapeHtml(c.name)}</td>
-          <td class="catActionsCol">
+    function renderCategoriesGrid(){
+      const grid = $("categoriesGrid");
+      if (!grid) return;
+
+      grid.innerHTML = (categories || []).map(c => `
+        <div class="cat-item">
+          <div class="cat-name">${escapeHtml(c.name)}</div>
+          <div class="cat-actions">
             <button type="button" class="secondary iconbtn" title="Slet" data-del-cat="${escapeHtml(c.id)}">🗑</button>
-          </td>
-        </tr>
-      `).join("") || `<tr><td colspan="2" class="muted">Ingen kategorier endnu</td></tr>`;
+          </div>
+        </div>
+      `).join("") || `<div class="muted">Ingen kategorier endnu</div>`;
 
       document.querySelectorAll("button[data-del-cat]").forEach(btn => {
         btn.addEventListener("click", () => deleteCategory(btn.getAttribute("data-del-cat")));
@@ -1127,6 +1281,50 @@
       return { totalJobs, totalWorkMin, totalTravelMin, totalInvoiceEx };
     }
 
+    function getMonthKey(dateStr){
+      return dateStr ? String(dateStr).slice(0,7) : "";
+    }
+
+    function renderStatsPanel(){
+      if (!$("statsMonth")) return;
+
+      const months = Array.from(new Set(jobs.map(j => getMonthKey(j.job_date)).filter(Boolean)))
+        .sort((a,b)=>b.localeCompare(a));
+      const cur = $("statsMonth").value || "";
+      $("statsMonth").innerHTML = `<option value="">Alle</option>` + months.map(m => `<option value="${m}">${m}</option>`).join("");
+      if (months.includes(cur)) $("statsMonth").value = cur;
+
+      const selected = $("statsMonth").value || "";
+      const subset = selected ? jobs.filter(j => getMonthKey(j.job_date) === selected) : jobs;
+      const s = computeStats(subset);
+      $("statTotalJobs").textContent = String(s.totalJobs);
+      $("statTotalWork").textContent = fmtH(s.totalWorkMin);
+      $("statTotalTravel").textContent = fmtH(s.totalTravelMin);
+      $("statTotalInv").textContent = Number(s.totalInvoiceEx).toFixed(2);
+
+      const byMonth = {};
+      jobs.forEach(j => {
+        const key = getMonthKey(j.job_date);
+        if (!key) return;
+        byMonth[key] ||= { jobs: 0, work: 0, travel: 0, inv: 0 };
+        byMonth[key].jobs += 1;
+        byMonth[key].work += Number(j.work_minutes) || 0;
+        byMonth[key].travel += Number(j.travel_minutes) || 0;
+        byMonth[key].inv += Number(j.invoice_amount_ex_vat) || 0;
+      });
+
+      const rows = Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0]));
+      $("statsMonthBody").innerHTML = rows.map(([m,v]) => `
+        <tr>
+          <td class="mono">${escapeHtml(m)}</td>
+          <td>${v.jobs}</td>
+          <td>${fmtH(v.work)}</td>
+          <td>${fmtH(v.travel)}</td>
+          <td>${Number(v.inv).toFixed(2)}</td>
+        </tr>
+      `).join("") || `<tr><td colspan="5" class="muted">Ingen data endnu</td></tr>`;
+    }
+
     function renderStats(filtered){
       const s = computeStats(filtered);
       $("kpiJobs").textContent = String(s.totalJobs);
@@ -1183,6 +1381,7 @@
       const filtered = filterJobs();
       renderStats(filtered);
       renderJobsTable(filtered);
+      renderStatsPanel();
     }
 
     function exportCSV(rows){
@@ -1232,7 +1431,7 @@
       $("invoiceNo").value = "";
       $("jobDate").value = todayISO();
       $("categorySelect").value = "";
-      $("statusSelect").value = "draft";
+      $("statusSelect").value = "planned";
 
       $("clientSelect").value = "";
       $("clientManual").value = "";
@@ -1267,7 +1466,7 @@
       $("editInvoiceNo").value = j.invoice_no ?? "";
       $("editJobDate").value = j.job_date ?? todayISO();
       $("editCategorySelect").value = j.category_id ?? "";
-      $("editStatusSelect").value = j.status ?? "draft";
+      $("editStatusSelect").value = j.status ?? "planned";
 
       $("editClientSelect").value = j.client_id ?? "";
       $("editClientManual").value = (j.client_id ? "" : (j.client ?? j.client_name ?? ""));
@@ -1295,7 +1494,7 @@
 
       if (user) {
         $("jobDate").value = todayISO();
-        $("statusSelect").value = "draft";
+        $("statusSelect").value = "planned";
         await loadClients();
         await loadCategories();
         await ensureDefaultCategories();
@@ -1324,7 +1523,7 @@
       setLoggedInUI(true);
 
       $("jobDate").value = todayISO();
-      $("statusSelect").value = "draft";
+      $("statusSelect").value = "planned";
       await loadClients();
       await loadCategories();
       await ensureDefaultCategories();
@@ -1428,7 +1627,13 @@
 
       // NEW: job_no
       let job_no = ($("jobNo").value || "").trim();
-      if (!job_no) job_no = await allocateUniqueJobNo();
+      if (!job_no) job_no = await allocateJobNoForPrefix(getYearPrefix(job_date));
+      const uses = await countJobNoUses(job_no);
+      if (uses >= 2) {
+        $("jobMsg").textContent = `Jobnr ${job_no} er allerede brugt to gange. Opret igen for nyt nr.`;
+        await fillNewJobNo();
+        return;
+      }
 
       const { error } = await supabase.from("jobs").insert({
         user_id: user.id,
@@ -1446,7 +1651,7 @@
         notes
       });
 
-      if (error) { $("jobMsg").textContent = error.message; return; }
+      if (error) { $("jobMsg").textContent = formatJobError(error); return; }
 
       $("jobMsg").textContent = `Job gemt ✅ (Job nr: ${job_no})`;
       resetJobForm();
@@ -1497,7 +1702,7 @@
       };
 
       const { error } = await supabase.from("jobs").update(patch).eq("id", editingId);
-      if (error) { $("editMsg").textContent = error.message; return; }
+      if (error) { $("editMsg").textContent = formatJobError(error); return; }
 
       $("editMsg").textContent = "Rettet ✅";
       await loadJobs();
@@ -1526,6 +1731,7 @@
     $("search").addEventListener("input", renderAll);
     $("yearFilter").addEventListener("change", renderAll);
     $("statusFilter").addEventListener("change", renderAll);
+    $("statsMonth").addEventListener("change", renderStatsPanel);
 
     $("exportBtn").addEventListener("click", () => {
       const filtered = filterJobs();
@@ -1543,6 +1749,7 @@
     $("workText").addEventListener("input", () => { maybeAutoCalcNewAmount(); });
     $("autoCalcAmount").addEventListener("change", () => { maybeAutoCalcNewAmount(); });
     $("clientSelect").addEventListener("change", () => { updateClientManualVisibility(); updateClientRateHints(); maybeAutoCalcNewAmount(); });
+    $("jobDate").addEventListener("change", fillNewJobNo);
 
     // Invoice previews + auto calc (EDIT)
     $("editInvoiceExVat").addEventListener("input", updateEditInvoicePreview);
@@ -1551,6 +1758,7 @@
     $("editClientSelect").addEventListener("change", () => { updateEditClientManualVisibility(); updateEditClientRateHints(); maybeAutoCalcEditAmount(); });
 
     // Initial
+    initTabs();
     await checkSession();
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -1558,7 +1766,7 @@
       setLoggedInUI(!!user);
       if (user) {
         $("jobDate").value = todayISO();
-        $("statusSelect").value = "draft";
+        $("statusSelect").value = "planned";
         await loadClients();
         await loadCategories();
         await ensureDefaultCategories();
