@@ -480,6 +480,11 @@
           </div>
 
           <div>
+            <label>Overskrift</label>
+            <input id="jobTitle" placeholder="fx Fodboldkamp i Horsens" />
+          </div>
+
+          <div>
             <label>Kategori</label>
             <select id="categorySelect"></select>
           </div>
@@ -488,7 +493,7 @@
             <label>Status</label>
             <select id="statusSelect">
               <option value="planned">planlagt</option>
-              <option value="done">udført</option>
+              <option value="ready">udført</option>
               <option value="invoiced">faktureret</option>
             </select>
           </div>
@@ -549,8 +554,8 @@
         <div class="row" style="margin-top:12px; align-items:flex-end; justify-content:space-between;">
           <div style="display:flex; gap:10px; flex-wrap:wrap; flex:1 1 auto;">
             <div style="min-width: 220px;">
-              <label>Søg (jobnr/kunde/faktura/noter)</label>
-              <input id="search" placeholder="fx 123456 / Horsens / 2025- / bryllup" />
+              <label>Søg (jobnr/overskrift/kunde/faktura/noter)</label>
+              <input id="search" placeholder="fx 123456 / bryllup / Horsens / 2025-" />
             </div>
             <div style="min-width: 160px;">
               <label>År</label>
@@ -561,7 +566,7 @@
               <select id="statusFilter">
                 <option value="">Alle</option>
                 <option value="planned">planlagt</option>
-                <option value="done">udført</option>
+                <option value="ready">udført</option>
                 <option value="invoiced">faktureret</option>
               </select>
             </div>
@@ -584,6 +589,7 @@
           <thead>
             <tr>
               <th>Job nr</th>
+              <th>Overskrift</th>
               <th>Dato</th>
               <th>Status</th>
               <th>Kunde</th>
@@ -693,6 +699,11 @@
           </div>
 
           <div>
+            <label>Overskrift</label>
+            <input id="editJobTitle" />
+          </div>
+
+          <div>
             <label>Kategori</label>
             <select id="editCategorySelect"></select>
           </div>
@@ -701,7 +712,7 @@
             <label>Status</label>
             <select id="editStatusSelect">
               <option value="planned">planlagt</option>
-              <option value="done">udført</option>
+              <option value="ready">udført</option>
               <option value="invoiced">faktureret</option>
             </select>
           </div>
@@ -804,7 +815,6 @@
     function statusBadge(st){
       const s = String(st||"planned");
       if (s === "planned") return `<span class="pill plan">Planlagt</span>`;
-      if (s === "done") return `<span class="pill ready">Udført</span>`;
       if (s === "invoiced") return `<span class="pill inv">Faktureret</span>`;
       if (s === "ready") return `<span class="pill ready">Udført</span>`;
       if (s === "paid") return `<span class="pill inv">Faktureret</span>`;
@@ -1149,7 +1159,7 @@
       const { data, error } = await supabase
         .from("jobs")
         .select(`
-          id, job_no, job_date, status,
+          id, job_no, title, job_date, status,
           client, client_id,
           invoice_no, work_minutes, work_text, travel_minutes, invoice_amount_ex_vat, notes,
           category_id,
@@ -1340,7 +1350,7 @@
       const st = $("statusFilter").value || "";
 
       return jobs.filter(j => {
-        const hay = `${j.job_no||""} ${j.client_name||""} ${j.invoice_no||""} ${j.notes||""}`.toLowerCase();
+        const hay = `${j.job_no||""} ${j.title||""} ${j.client_name||""} ${j.invoice_no||""} ${j.notes||""}`.toLowerCase();
         if (q && !hay.includes(q)) return false;
         if (year && String(j.job_date||"").slice(0,4) !== year) return false;
         if (st && String(j.status||"") !== st) return false;
@@ -1356,6 +1366,7 @@
         return `
           <tr>
             <td class="mono">${escapeHtml(shownNo || "")}</td>
+            <td>${escapeHtml(j.title || "")}</td>
             <td>${escapeHtml(j.job_date || "")}</td>
             <td>${statusBadge(j.status)}</td>
             <td>${escapeHtml(j.client_name || "")}</td>
@@ -1370,7 +1381,7 @@
             <td><button type="button" class="secondary" data-edit="${escapeHtml(j.id)}">Ret</button></td>
           </tr>
         `;
-      }).join("") || `<tr><td colspan="10" class="muted">Ingen jobs matcher filter</td></tr>`;
+      }).join("") || `<tr><td colspan="11" class="muted">Ingen jobs matcher filter</td></tr>`;
 
       document.querySelectorAll("button[data-edit]").forEach(btn => {
         btn.addEventListener("click", () => openEdit(btn.getAttribute("data-edit")));
@@ -1386,7 +1397,7 @@
     }
 
     function exportCSV(rows){
-      const header = ["JobNr","DBID","Dato","Status","Kunde","Kategori","FakturaNr","WorkMin","WorkTimer","WorkText","TransportMin","TransportTimer","BeløbExMoms","BeløbInclMoms","Noter"];
+      const header = ["JobNr","Overskrift","DBID","Dato","Status","Kunde","Kategori","FakturaNr","WorkMin","WorkTimer","WorkText","TransportMin","TransportTimer","BeløbExMoms","BeløbInclMoms","Noter"];
       const lines = [header.join(",")];
 
       const esc = (s) => {
@@ -1399,6 +1410,7 @@
         const incl = inclVat(ex);
         lines.push([
           esc(j.job_no || ""),
+          esc(j.title || ""),
           esc(j.id),
           esc(j.job_date),
           esc(j.status),
@@ -1431,6 +1443,7 @@
     function resetJobForm(){
       $("invoiceNo").value = "";
       $("jobDate").value = todayISO();
+      $("jobTitle").value = "";
       $("categorySelect").value = "";
       $("statusSelect").value = "planned";
 
@@ -1466,6 +1479,7 @@
 
       $("editInvoiceNo").value = j.invoice_no ?? "";
       $("editJobDate").value = j.job_date ?? todayISO();
+      $("editJobTitle").value = j.title ?? "";
       $("editCategorySelect").value = j.category_id ?? "";
       $("editStatusSelect").value = j.status ?? "planned";
 
@@ -1602,6 +1616,7 @@
 
       const invoice_no = $("invoiceNo").value.trim();
       const job_date = $("jobDate").value || todayISO();
+      const title = $("jobTitle").value.trim() || null;
       const category_id = $("categorySelect").value || null;
 
       const status = $("statusSelect").value || "draft";
@@ -1639,6 +1654,7 @@
       const { error } = await supabase.from("jobs").insert({
         user_id: user.id,
         job_no,
+        title,
         invoice_no,
         job_date,
         category_id,
@@ -1691,6 +1707,7 @@
       const patch = {
         invoice_no: $("editInvoiceNo").value.trim(),
         job_date: $("editJobDate").value || todayISO(),
+        title: $("editJobTitle").value.trim() || null,
         category_id: $("editCategorySelect").value || null,
         status: $("editStatusSelect").value || "draft",
         client_id,
