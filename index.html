@@ -268,6 +268,8 @@
     .pill.ready{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.35); }
     .pill.inv{ background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.35); }
     .pill.paid{ background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); }
+    .pill.confirmed{ background: rgba(14,165,163,.12); border-color: rgba(14,165,163,.35); }
+    .pill.search{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.35); }
 
     .totals{
       display:grid;
@@ -371,6 +373,7 @@
       <button class="tab-btn" data-tab="kunder" type="button">Kunder</button>
       <button class="tab-btn" data-tab="kategorier" type="button">Kategorier</button>
       <button class="tab-btn" data-tab="statistik" type="button">Statistik</button>
+      <button class="tab-btn" data-tab="byline" type="button">Byline</button>
     </div>
 
     <!-- LOGIN -->
@@ -682,6 +685,58 @@
         <p class="muted" id="reportMsg"></p>
       </div>
 
+      <!-- Byline -->
+      <div class="card tab-panel" data-panel="byline">
+        <div class="cardhead">
+          <h2>Byline Tracker</h2>
+          <button id="bylineRefreshBtn" type="button" class="secondary">Opdater</button>
+        </div>
+        <p class="muted">Henter data fra results.json (GitHub/Supabase).</p>
+
+        <div class="row" style="margin-top:12px; align-items:flex-end;">
+          <div style="min-width: 240px;">
+            <label>Filter</label>
+            <input id="bylineFilter" placeholder="domæne, titel, byline..." />
+          </div>
+        </div>
+
+        <div class="totals">
+          <div class="stat"><div class="k">Total</div><div id="bylineTotal" class="v">0</div></div>
+          <div class="stat"><div class="k">Bekræftet</div><div id="bylineConfirmed" class="v">0</div></div>
+          <div class="stat"><div class="k">Seneste 7 dage</div><div id="bylineLast7Count" class="v">0</div></div>
+        </div>
+
+        <h3>Seneste 7 dage</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Dato</th>
+              <th>Status</th>
+              <th>Domæne</th>
+              <th>Titel</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="bylineLast7Tbody"></tbody>
+        </table>
+
+        <h3 style="margin-top:12px;">Alle</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Dato</th>
+              <th>Status</th>
+              <th>Domæne</th>
+              <th>Titel</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="bylineTbody"></tbody>
+        </table>
+
+        <p class="muted" id="bylineMsg"></p>
+      </div>
+
       <!-- EDIT CARD -->
       <div class="card hidden tab-panel" id="editCard" data-panel="overblik">
         <h2>Ret job <span class="mono" id="editId"></span></h2>
@@ -778,6 +833,8 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwemJkZXptYnl5ZHVxanRoZHp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDU3MzAsImV4cCI6MjA4MjA4MTczMH0.d_-8frGdHnvBO6smGThEUI81KUWI39rp5VX65O_HauU";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const BYLINE_JSON_URL = "./results.json";
+
     const $ = (id) => document.getElementById(id);
 
     const escapeHtml = (s) =>
@@ -819,6 +876,100 @@
       if (s === "ready") return `<span class="pill ready">Udført</span>`;
       if (s === "paid") return `<span class="pill inv">Faktureret</span>`;
       return `<span class="pill draft">Planlagt</span>`;
+    }
+
+    function bylineStatusBadge(st){
+      const s = String(st||"");
+      if (s === "confirmed_on_page") return `<span class="pill confirmed">Bekræftet</span>`;
+      return `<span class="pill search">Søgning</span>`;
+    }
+
+    function bylineDate(row){
+      return row.published_at || row.search_date || (row.first_seen_utc ? row.first_seen_utc.slice(0,10) : "");
+    }
+
+    function dateToMs(iso){
+      if (!iso) return 0;
+      const d = new Date(`${iso}T00:00:00`);
+      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+    }
+
+    function sortBylineNewest(rows){
+      return [...rows].sort((a,b) => {
+        const da = bylineDate(a);
+        const db = bylineDate(b);
+        if (da && db) return db.localeCompare(da);
+        if (db) return 1;
+        if (da) return -1;
+        return 0;
+      });
+    }
+
+    let bylineRows = [];
+    let bylineLoaded = false;
+
+    async function loadBylineData(force = false){
+      if (bylineLoaded && !force) return;
+      if (!BYLINE_JSON_URL || BYLINE_JSON_URL.includes("USERNAME/REPO")){
+        $("bylineMsg").textContent = "Sæt BYLINE_JSON_URL til din public results.json (GitHub eller Supabase).";
+        return;
+      }
+      $("bylineMsg").textContent = "Henter byline-data…";
+      try{
+        const res = await fetch(BYLINE_JSON_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        bylineRows = Array.isArray(data) ? data : [];
+        bylineLoaded = true;
+        renderByline();
+        $("bylineMsg").textContent = bylineRows.length ? "" : "Ingen data fundet i results.json.";
+      }catch(e){
+        $("bylineMsg").textContent = `Kunne ikke hente results.json: ${e.message}`;
+      }
+    }
+
+    function renderByline(){
+      const q = ($("bylineFilter")?.value || "").toLowerCase().trim();
+      const filtered = bylineRows.filter(r => {
+        if (!q) return true;
+        return [r.domain, r.page_title, r.google_title, r.query_byline, r.confirmed_byline, r.url]
+          .filter(Boolean)
+          .some(v => String(v).toLowerCase().includes(q));
+      });
+
+      const confirmed = filtered.filter(r => r.status === "confirmed_on_page");
+      const last7Cutoff = Date.now() - 7*24*60*60*1000;
+      const last7 = filtered.filter(r => {
+        const d = dateToMs(bylineDate(r));
+        return d && d >= last7Cutoff;
+      });
+
+      $("bylineTotal").textContent = filtered.length;
+      $("bylineConfirmed").textContent = confirmed.length;
+      $("bylineLast7Count").textContent = last7.length;
+
+      const renderRows = (rows, tbodyId) => {
+        const tbody = $(tbodyId);
+        tbody.innerHTML = "";
+        sortBylineNewest(rows).forEach(r => {
+          const tr = document.createElement("tr");
+          const date = bylineDate(r) || "";
+          const title = escapeHtml(r.page_title || r.google_title || "");
+          const domain = escapeHtml(r.domain || "");
+          const url = escapeHtml(r.url || "");
+          tr.innerHTML = `
+            <td class="mono">${date}</td>
+            <td>${bylineStatusBadge(r.status)}</td>
+            <td>${domain}</td>
+            <td>${title}</td>
+            <td><a href="${url}" target="_blank" rel="noopener">${url}</a></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      };
+
+      renderRows(last7, "bylineLast7Tbody");
+      renderRows(filtered, "bylineTbody");
     }
 
     // Parse time input to minutes
@@ -866,6 +1017,11 @@
       if (isIn) setActiveTab(activeTab, false);
     }
 
+    function initBylineUI(){
+      $("bylineRefreshBtn").addEventListener("click", () => loadBylineData(true));
+      $("bylineFilter").addEventListener("input", () => renderByline());
+    }
+
     let activeTab = "overblik";
     function setActiveTab(name, updateHash = true){
       activeTab = name || "overblik";
@@ -875,6 +1031,7 @@
       document.querySelectorAll(".tab-panel").forEach(panel => {
         panel.classList.toggle("active", panel.dataset.panel === activeTab);
       });
+      if (activeTab === "byline") loadBylineData();
       if (updateHash) history.replaceState(null, "", `#${activeTab}`);
     }
 
@@ -1776,6 +1933,7 @@
     $("editClientSelect").addEventListener("change", () => { updateEditClientManualVisibility(); updateEditClientRateHints(); maybeAutoCalcEditAmount(); });
 
     // Initial
+    initBylineUI();
     initTabs();
     await checkSession();
 
