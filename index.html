@@ -697,6 +697,12 @@
         <p class="muted">Henter data fra results.json (GitHub/Supabase).</p>
         <div class="row" style="margin-top:8px; align-items:flex-end;">
           <div style="min-width:320px; flex:1;">
+            <label>Byline du vil søge på</label>
+            <input id="bylineQuery" placeholder="fx RSFOTO eller Rasmus Jensen / Gonzales Photo" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px; align-items:flex-end;">
+          <div style="min-width:320px; flex:1;">
             <label>Webhook/API til byline-søgning (valgfri)</label>
             <input id="bylineApiUrl" placeholder="https://din-server.dk/byline/run" />
           </div>
@@ -1047,7 +1053,12 @@
 
     async function runBylineSearchNow(){
       const btn = $("bylineRunBtn");
+      const query = ($("bylineQuery").value || "").trim();
       const apiUrl = ($("bylineApiUrl").value || "").trim();
+      if (!query){
+        $("bylineMsg").textContent = "Skriv en byline at søge på først.";
+        return;
+      }
       if (!apiUrl){
         $("bylineMsg").textContent = "Indsæt webhook/API URL først.";
         return;
@@ -1063,7 +1074,11 @@
         let res = await fetch(apiUrl, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ action: "run_byline_search", requested_at: new Date().toISOString() }),
+          body: JSON.stringify({
+            action: "run_byline_search",
+            query,
+            requested_at: new Date().toISOString()
+          }),
         });
 
         // Some endpoints only allow GET.
