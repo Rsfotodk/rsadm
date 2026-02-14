@@ -689,9 +689,18 @@
       <div class="card tab-panel" data-panel="byline">
         <div class="cardhead">
           <h2>Byline Tracker</h2>
-          <button id="bylineRefreshBtn" type="button" class="secondary">Opdater</button>
+          <div class="row" style="gap:8px;">
+            <button id="bylineRunBtn" type="button">Søg nye nu</button>
+            <button id="bylineRefreshBtn" type="button" class="secondary">Opdater</button>
+          </div>
         </div>
         <p class="muted">Henter data fra results.json (GitHub/Supabase).</p>
+        <div class="row" style="margin-top:8px; align-items:flex-end;">
+          <div style="min-width:320px; flex:1;">
+            <label>Webhook/API til byline-søgning (valgfri)</label>
+            <input id="bylineApiUrl" placeholder="https://din-server.dk/byline/run" />
+          </div>
+        </div>
 
         <div class="row" style="margin-top:12px; align-items:flex-end;">
           <div style="min-width: 240px;">
@@ -834,6 +843,7 @@
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const BYLINE_JSON_URL = "./results.json";
+    const BYLINE_API_URL_KEY = "rsadm.byline.apiUrl";
 
     const $ = (id) => document.getElementById(id);
 
@@ -916,7 +926,11 @@
       }
       $("bylineMsg").textContent = "Henter byline-data…";
       try{
-        const res = await fetch(BYLINE_JSON_URL, { cache: "no-store" });
+        // Force a fresh request on manual refresh to bypass CDN/browser cache.
+        const url = force
+          ? `${BYLINE_JSON_URL}${BYLINE_JSON_URL.includes("?") ? "&" : "?"}_ts=${Date.now()}`
+          : BYLINE_JSON_URL;
+        const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         bylineRows = Array.isArray(data) ? data : [];
@@ -1020,6 +1034,55 @@
     function initBylineUI(){
       $("bylineRefreshBtn").addEventListener("click", () => loadBylineData(true));
       $("bylineFilter").addEventListener("input", () => renderByline());
+      $("bylineRunBtn").addEventListener("click", runBylineSearchNow);
+
+      const saved = localStorage.getItem(BYLINE_API_URL_KEY) || "";
+      $("bylineApiUrl").value = saved;
+      $("bylineApiUrl").addEventListener("change", () => {
+        const v = $("bylineApiUrl").value.trim();
+        if (v) localStorage.setItem(BYLINE_API_URL_KEY, v);
+        else localStorage.removeItem(BYLINE_API_URL_KEY);
+      });
+    }
+
+    async function runBylineSearchNow(){
+      const btn = $("bylineRunBtn");
+      const apiUrl = ($("bylineApiUrl").value || "").trim();
+      if (!apiUrl){
+        $("bylineMsg").textContent = "Indsæt webhook/API URL først.";
+        return;
+      }
+
+      localStorage.setItem(BYLINE_API_URL_KEY, apiUrl);
+      btn.disabled = true;
+      const oldTxt = btn.textContent;
+      btn.textContent = "Kører...";
+      $("bylineMsg").textContent = "Starter ny byline-søgning...";
+
+      try{
+        let res = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "run_byline_search", requested_at: new Date().toISOString() }),
+        });
+
+        // Some endpoints only allow GET.
+        if (res.status === 404 || res.status === 405) {
+          res = await fetch(apiUrl, { method: "GET" });
+        }
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        // Give scraper/storage a moment before refresh.
+        await new Promise(r => setTimeout(r, 1500));
+        await loadBylineData(true);
+        $("bylineMsg").textContent = "Ny søgning trigget. Listen er opdateret.";
+      }catch(e){
+        $("bylineMsg").textContent = `Kunne ikke starte søgning: ${e.message}`;
+      }finally{
+        btn.disabled = false;
+        btn.textContent = oldTxt;
+      }
     }
 
     let activeTab = "overblik";
